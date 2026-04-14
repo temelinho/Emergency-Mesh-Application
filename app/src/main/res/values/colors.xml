@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Core Colors -->
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+    <color name="transparent">#00000000</color>
+
+    <!-- Emergency Theme Colors -->
+    <color name="colorPrimary">#FF5722</color>        <!-- Neon Orange (Action) -->
+    <color name="colorPrimaryDark">#D84315</color>
+    <color name="colorAccent">#FFC107</color>         <!-- Amber/Yellow -->
+
+    <!-- Backgrounds (True Black for OLED / Battery) -->
+    <color name="background_dark">#000000</color>     <!-- Pitch Black -->
+    <color name="surface_dark">#121212</color>        <!-- Slightly elevated -->
+    <color name="surface_light">#1E1E1E</color>       <!-- Inputs/Cards -->
+
+    <!-- Text Colors -->
+    <color name="text_primary">#FFFFFF</color>
+    <color name="text_secondary">#9E9E9E</color>      <!-- 60% White/Grey -->
+    <color name="text_hint">#616161</color>           <!-- Darker Grey -->
+
+    <!-- Tactical Status Grid Colors (Base is surface_light, these are for highlights/icons) -->
+    <color name="status_safe">#4CAF50</color>         <!-- Green -->
+    <color name="status_danger">#F44336</color>       <!-- Red -->
+    <color name="status_help">#FFC107</color>         <!-- Amber -->
+    <color name="status_debris">#9C27B0</color>       <!-- Purple/Magenta -->
+    <color name="status_supply">#03A9F4</color>       <!-- Blue -->
+    <color name="status_low_battery">#FF9800</color>  <!-- Orange Highlight -->
+</resources>

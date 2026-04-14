@@ -1,0 +1,17 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="200dp"
+    android:height="200dp"
+    android:viewportWidth="200"
+    android:viewportHeight="200">
+    <!-- Signal Bars -->
+    <path android:fillColor="#1976D2" android:pathData="M40,140 h15 v-20 h-15 z" />
+    <path android:fillColor="#1976D2" android:pathData="M65,140 h15 v-40 h-15 z" />
+    <path android:fillColor="#1976D2" android:pathData="M90,140 h15 v-60 h-15 z" />
+    <!-- Pulse Line -->
+    <path
+        android:strokeColor="#D32F2F"
+        android:strokeWidth="4"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M115,110 L130,110 L140,80 L155,140 L165,110 L180,110" />
+</vector>

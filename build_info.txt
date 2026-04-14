@@ -1,0 +1,35 @@
+WARNING: A restricted method in java.lang.System has been called
+WARNING: java.lang.System::load has been called by net.rubygrapefruit.platform.internal.NativeLibraryLoader in an unnamed module (file:/C:/Users/temel/.gradle/wrapper/dists/gradle-7.3.1-bin/b47edjwz5j48avzx8xp2zpcd3/gradle-7.3.1/lib/native-platform-0.22-milestone-21.jar)
+WARNING: Use --enable-native-access=ALL-UNNAMED to avoid a warning for callers in this module
+WARNING: Restricted methods will be blocked in a future release unless native access is enabled
+
+Initialized native services in: C:\Users\temel\.gradle\native
+Initialized jansi services in: C:\Users\temel\.gradle\native
+To honour the JVM settings for this build a single-use Daemon process will be forked. See https://docs.gradle.org/7.3.1/userguide/gradle_daemon.html#sec:disabling_the_daemon.
+Starting process 'Gradle build daemon'. Working directory: C:\Users\temel\.gradle\daemon\7.3.1 Command: C:\Program Files\Java\jdk-25.0.2\bin\java.exe --add-opens java.base/java.util=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED --add-opens java.base/java.lang.invoke=ALL-UNNAMED --add-opens java.base/java.util=ALL-UNNAMED --add-opens java.prefs/java.util.prefs=ALL-UNNAMED --add-opens java.prefs/java.util.prefs=ALL-UNNAMED --add-opens java.base/java.nio.charset=ALL-UNNAMED --add-opens java.base/java.net=ALL-UNNAMED --add-opens java.base/java.util.concurrent.atomic=ALL-UNNAMED -Xmx2048m -Dfile.encoding=UTF-8 -Duser.country=TR -Duser.language=tr -Duser.variant -cp C:\Users\temel\.gradle\wrapper\dists\gradle-7.3.1-bin\b47edjwz5j48avzx8xp2zpcd3\gradle-7.3.1\lib\gradle-launcher-7.3.1.jar org.gradle.launcher.daemon.bootstrap.GradleDaemon 7.3.1
+Successfully started process 'Gradle build daemon'
+An attempt to start the daemon took 0.73 secs.
+The client will now receive all logging from the daemon (pid: 8456). The daemon log file: C:\Users\temel\.gradle\daemon\7.3.1\daemon-8456.out.log
+Daemon will be stopped at the end of the build 
+Using 12 worker leases.
+Watching the file system is configured to be enabled if available
+Now considering [C:\Users\temel\StudioProjects\EmergencyMeshApp] as hierarchies to watch
+File system watching is active
+Starting Build
+Settings evaluated using settings file 'C:\Users\temel\StudioProjects\EmergencyMeshApp\settings.gradle'.
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Using dependency catalogs requires the activation of the matching feature preview.
+See the documentation at https://docs.gradle.org/7.3.1/userguide/platforms.html#sub:central-declaration-of-dependencies
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --debug option to get more log output.
+> Run with --scan to get full insights.
+
+* Get more help at https://help.gradle.org
+
+BUÝLD FAILED in 2s
+Watched directory hierarchies: []

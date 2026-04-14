@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">EmergencyMeshApp</string>
+    <string name="status_safe_text">Güvendeyim, Her Şey Yolunda</string>
+    <string name="status_danger_text">ACİL TEHLİKE! Yardım Gerekli!</string>
+    <string name="status_help_text">Tıbbi Yardım / Doktor Gerekli</string>
+    <string name="status_debris_text">Enkaz Altındayım / Arama Kurtarma</string>
+    <string name="status_supply_text">Su ve Gıda Desteği İhtiyacı</string>
+    <string name="status_low_battery_text">Cihaz Şarjı Bitmek Üzere</string>
+</resources>

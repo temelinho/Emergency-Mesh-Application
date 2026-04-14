@@ -1,0 +1,73 @@
+﻿.\gradlew : WARNING: A 
+restricted method in ja
+va.lang.System has been
+ called
+At line:1 char:1
++ .\gradlew :app:compil
+eDebugJavaWithJavac 2>&
+1 | Out-File -FilePath 
+"b ...
++ ~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~
+~
+    + CategoryInfo     
+         : NotSpecifi  
+  ed: (WARNING: A re   
+ st...has been call    
+ed:String) [], Rem    o
+teException
+    + FullyQualifiedEr 
+   rorId : NativeComm  
+  andError
+ 
+WARNING: java.lang.Syst
+em::load has been calle
+d by net.rubygrapefruit
+.platform.internal.Nati
+veLibraryLoader in an u
+nnamed module (file:/C:
+/Users/temel/.gradle/wr
+apper/dists/gradle-8.10
+.2-bin/a04bxjujx95o3nb9
+9gddekhwo/gradle-8.10.2
+/lib/native-platform-0.
+22-milestone-26.jar)
+WARNING: Use --enable-n
+ative-access=ALL-UNNAME
+D to avoid a warning fo
+r callers in this modul
+e
+WARNING: Restricted met
+hods will be blocked in
+ a future release unles
+s native access is enab
+led
+
+Starting a Gradle Daemon, 3 incompatible and 1 stopped Daemons could not be reused, use --status for details
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preDebugBuild UP-TO-DATE
+> Task :app:javaPreCompileDebug
+> Task :app:generateDebugResValues
+> Task :app:checkDebugAarMetadata
+> Task :app:mapDebugSourceSetPaths
+> Task :app:generateDebugResources
+> Task :app:packageDebugResources
+> Task :app:createDebugCompatibleScreenManifests
+> Task :app:extractDeepLinksDebug
+> Task :app:parseDebugLocalResources
+> Task :app:mergeDebugResources
+> Task :app:processDebugMainManifest
+> Task :app:processDebugManifest
+> Task :app:processDebugManifestForPackage
+> Task :app:processDebugResources
+
+> Task :app:compileDebugJavaWithJavac
+Note: Some input files 
+use or override a depre
+cated API.
+Note: Recompile with -X
+lint:deprecation for de
+tails.
+
+BU─░LD SUCCESSFUL in 20s
+15 actionable tasks: 15 executed

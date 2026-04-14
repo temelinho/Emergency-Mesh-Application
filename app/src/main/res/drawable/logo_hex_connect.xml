@@ -1,0 +1,18 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="200dp"
+    android:height="200dp"
+    android:viewportWidth="200"
+    android:viewportHeight="200">
+    <!-- Hexagon Frame -->
+    <path
+        android:strokeColor="#37474F"
+        android:strokeWidth="8"
+        android:pathData="M100,20 L170,60 L170,140 L100,180 L30,140 L30,60 z" />
+    <!-- Mesh Connections -->
+    <path
+        android:strokeColor="#4CAF50"
+        android:strokeWidth="3"
+        android:pathData="M100,50 L140,90 L100,130 L60,90 z M100,50 L100,130 M60,90 L140,90" />
+    <!-- Central Node -->
+    <path android:fillColor="#4CAF50" android:pathData="M92,92 a8,8 0,1 1,16 0 a8,8 0,1 1,-16 0" />
+</vector>
