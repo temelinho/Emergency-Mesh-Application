@@ -89,8 +89,9 @@ public class WifiDirectManager {
             ctx.registerReceiver(receiver, intentFilter);
         }
 
-        if (listener != null) listener.onWifiStatus("Başlıyor", "Receiver registered");
-        startDiscovery();
+        if (listener != null) listener.onWifiStatus("Pasif Mod", "Receiver registered, bekliyor...");
+        // Pasif mod: Açılışta otomatik tarama (discoverPeers) yapma
+        // startDiscovery();
     }
 
     private void setupIntentFilter() {
