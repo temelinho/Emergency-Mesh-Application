@@ -28,7 +28,7 @@ public class BackendSync {
     private static final long RETRY_DELAY_MS = 30000; // 30 saniye
 
     // Backend URL
-    private static final String BACKEND_BATCH_URL = "https://hydrargyric-katalina-gravid.ngrok-free.dev/api/v1/messages/batch";
+    private static final String BACKEND_BATCH_URL = "http://10.27.6.21:8080/api/v1/messages/batch";
 
     private final Context ctx;
     private final Listener listener;
