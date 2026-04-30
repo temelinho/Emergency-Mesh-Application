@@ -235,10 +235,14 @@ public class WifiDirectManager {
     }
 
     private void scheduleNextDiscovery() {
+        // Şarj tüketimini azaltmak (pasif mod) için sürekli aktif tarama döngüsü kapatıldı.
+        // Wi-Fi Direct artık sadece dışarıdan gelen yayınları/istekleri dinleyecek.
+        /*
         handler.removeCallbacksAndMessages(null);
         handler.postDelayed(() -> {
             if (isDiscovering) startDiscovery();
         }, DISCOVERY_INTERVAL_MS);
+        */
     }
 
     public void connectToPeer(final WifiP2pDevice device) {

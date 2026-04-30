@@ -28,12 +28,15 @@ public class LoginActivity extends AppCompatActivity {
         setContentView(R.layout.activity_login);
 
         sessionManager = new SessionManager(this);
-        if (sessionManager.isLoggedIn()) {
-            startActivity(new Intent(this, MainActivity.class));
-            finish();
-            return;
-        }
-
+        
+        // Şifresiz giriş (Bypass) için otomatik test kullanıcısı oluşturuluyor
+        sessionManager.saveUser("local_test_user", "YerelKullanici", "05550000000");
+        com.emergencymesh.util.NodeId.set(this, "local_test_user");
+        
+        startActivity(new Intent(this, MainActivity.class));
+        finish();
+        // return; // Yönlendirmeden sonraki kodlar derleme hatası vermemesi için yorum satırına alındı
+        /*
         editPhone = findViewById(R.id.editPhone);
         editPassword = findViewById(R.id.editPassword);
         Button btnLogin = findViewById(R.id.btnLogin);
@@ -43,6 +46,7 @@ public class LoginActivity extends AppCompatActivity {
         findViewById(R.id.btnGoToRegister).setOnClickListener(v -> {
             startActivity(new Intent(this, RegisterActivity.class));
         });
+        */
     }
 
     private void performLogin() {

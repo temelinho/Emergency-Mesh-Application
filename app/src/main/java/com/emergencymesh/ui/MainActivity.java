@@ -147,8 +147,8 @@ public class MainActivity extends AppCompatActivity {
             });
         }
 
-        // Mesaj kutusu FAB
-        findViewById(R.id.fabChat).setOnClickListener(v -> {
+        // Mesaj kutusu Butonu
+        findViewById(R.id.btnChat).setOnClickListener(v -> {
             startActivity(new Intent(this, ChatActivity.class));
         });
 
