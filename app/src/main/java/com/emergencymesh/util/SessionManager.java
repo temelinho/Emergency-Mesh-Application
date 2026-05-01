@@ -14,6 +14,11 @@ public class SessionManager {
     private static final String KEY_DISTRICT = "district";
     private static final String KEY_IS_LOGGED_IN = "is_logged_in";
 
+    // Sağlık Bilgileri
+    private static final String KEY_BLOOD_TYPE = "blood_type";
+    private static final String KEY_CHRONIC_DISEASE = "chronic_disease";
+    private static final String KEY_MEDICATION = "medication";
+
     private final SharedPreferences pref;
     private final SharedPreferences.Editor editor;
 
@@ -70,6 +75,25 @@ public class SessionManager {
 
     public String getDistrict() {
         return pref.getString(KEY_DISTRICT, "");
+    }
+
+    public void saveHealthProfile(String bloodType, String chronicDisease, String medication) {
+        editor.putString(KEY_BLOOD_TYPE, bloodType);
+        editor.putString(KEY_CHRONIC_DISEASE, chronicDisease);
+        editor.putString(KEY_MEDICATION, medication);
+        editor.apply();
+    }
+
+    public String getBloodType() {
+        return pref.getString(KEY_BLOOD_TYPE, "");
+    }
+
+    public String getChronicDisease() {
+        return pref.getString(KEY_CHRONIC_DISEASE, "");
+    }
+
+    public String getMedication() {
+        return pref.getString(KEY_MEDICATION, "");
     }
 
     public void logout() {

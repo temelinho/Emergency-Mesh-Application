@@ -27,8 +27,8 @@ public class BackendSync {
     private static final int MAX_SYNC_RETRY = 3;
     private static final long RETRY_DELAY_MS = 30000; // 30 saniye
 
-    // Backend URL
-    private static final String BACKEND_BATCH_URL = "http://10.27.6.21:8080/api/v1/messages/batch";
+    // Backend URL (Uzak sunucu VDS bağlantısı)
+    private static final String BACKEND_BATCH_URL = "http://37.247.101.86:8080/api/v1/messages/batch";
 
     private final Context ctx;
     private final Listener listener;

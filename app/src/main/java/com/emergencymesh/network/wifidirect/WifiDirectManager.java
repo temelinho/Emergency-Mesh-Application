@@ -107,7 +107,24 @@ public class WifiDirectManager {
             @Override
             public void onReceive(Context context, Intent intent) {
                 String action = intent.getAction();
-                if (WifiP2pManager.WIFI_P2P_PEERS_CHANGED_ACTION.equals(action)) {
+
+                if (WifiP2pManager.WIFI_P2P_STATE_CHANGED_ACTION.equals(action)) {
+                    // WiFi Direct durumu değişti
+                    int state = intent.getIntExtra(WifiP2pManager.EXTRA_WIFI_STATE, -1);
+                    if (state == WifiP2pManager.WIFI_P2P_STATE_ENABLED) {
+                        Log.d(TAG, "WiFi Direct AÇIK — keşif başlatılıyor");
+                        if (listener != null) listener.onWifiStatus("Aktif", "WiFi Direct açıldı, keşif başlıyor...");
+                        // WiFi Direct aktif olunca otomatik keşfi başlat
+                        handler.postDelayed(() -> startDiscovery(), 1000);
+                    } else {
+                        Log.d(TAG, "WiFi Direct KAPALI");
+                        isDiscovering = false;
+                        handler.removeCallbacksAndMessages(null);
+                        stopMessaging();
+                        if (listener != null) listener.onWifiStatus("Kapalı", "WiFi Direct devre dışı");
+                    }
+
+                } else if (WifiP2pManager.WIFI_P2P_PEERS_CHANGED_ACTION.equals(action)) {
                     if (manager != null && hasPermission()) {
                         if (ActivityCompat.checkSelfPermission(ctx, getRequiredPermission()) != PackageManager.PERMISSION_GRANTED) {
                             return;
@@ -236,14 +253,10 @@ public class WifiDirectManager {
     }
 
     private void scheduleNextDiscovery() {
-        // Şarj tüketimini azaltmak (pasif mod) için sürekli aktif tarama döngüsü kapatıldı.
-        // Wi-Fi Direct artık sadece dışarıdan gelen yayınları/istekleri dinleyecek.
-        /*
         handler.removeCallbacksAndMessages(null);
         handler.postDelayed(() -> {
             if (isDiscovering) startDiscovery();
         }, DISCOVERY_INTERVAL_MS);
-        */
     }
 
     public void connectToPeer(final WifiP2pDevice device) {

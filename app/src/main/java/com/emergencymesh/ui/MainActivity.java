@@ -42,6 +42,16 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
+
+import com.emergencymesh.util.VoiceAssistant;
+import android.os.Handler;
+import android.os.Looper;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -52,6 +62,15 @@ public class MainActivity extends AppCompatActivity {
     private String myNodeId;
     private SessionManager sessionManager;
     private final Map<String, Integer> nearbyNodes = new LinkedHashMap<>();
+
+    // Sesli yönlendirme motoru
+    private VoiceAssistant voiceAssistant;
+    // Durum izleme için
+    private final Handler statusPollHandler = new Handler(Looper.getMainLooper());
+    private final ExecutorService pollExecutor = Executors.newSingleThreadExecutor();
+    private String lastKnownEmergencyStatus = null;
+    private static final long POLL_INTERVAL_MS = 45_000; // 45 saniye
+    private static final String BACKEND_BASE = "http://37.247.101.86:8080";
 
     private TextView txtNodeCount, txtInternetStatus, txtBleStatus, txtWifiStatus, txtStatusDetail;
 
@@ -103,6 +122,9 @@ public class MainActivity extends AppCompatActivity {
 
         setContentView(R.layout.activity_main);
 
+        // Sesli yönlendirme motorunu başlat
+        voiceAssistant = new VoiceAssistant(this);
+
         initViews();
 
         myNodeId = NodeId.get(this);
@@ -114,7 +136,7 @@ public class MainActivity extends AppCompatActivity {
         // Üst butonlar
         findViewById(R.id.btnEmergency).setOnClickListener(v -> {
             v.performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS); // Titreşim
-            if (!emergencyModeActive) {
+            if (!isEmergencyServiceRunning()) {
                 if (hasAllPermissions()) {
                     startEmergencyMode();
                 } else {
@@ -167,14 +189,74 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void showSettingsDialog() {
-        com.google.android.material.bottomsheet.BottomSheetDialog dialog = new com.google.android.material.bottomsheet.BottomSheetDialog(this, R.style.Theme_EmergencyMeshApp);
+        com.google.android.material.bottomsheet.BottomSheetDialog dialog =
+                new com.google.android.material.bottomsheet.BottomSheetDialog(this, R.style.Theme_EmergencyMeshApp);
         android.view.View view = getLayoutInflater().inflate(R.layout.dialog_settings, null);
         dialog.setContentView(view);
+
+        // Kullanıcı bilgilerini doldur
+        String userName = sessionManager.getUserName();
+        String userPhone = sessionManager.getPhone();
+
+        TextView tvInitial = view.findViewById(R.id.tvAvatarInitial);
+        TextView tvName    = view.findViewById(R.id.tvSettingsUserName);
+        TextView tvPhone   = view.findViewById(R.id.tvSettingsUserPhone);
+
+        if (tvName != null) {
+            tvName.setText(userName != null && !userName.isEmpty() ? userName : "Kullanıcı");
+        }
+        if (tvPhone != null) {
+            tvPhone.setText(userPhone != null && !userPhone.isEmpty() ? userPhone : "Telefon bilgisi yok");
+        }
+        if (tvInitial != null && userName != null && !userName.isEmpty()) {
+            tvInitial.setText(String.valueOf(userName.charAt(0)).toUpperCase());
+        }
 
         view.findViewById(R.id.btnEditProfile).setOnClickListener(v -> {
             dialog.dismiss();
             startActivity(new Intent(this, ProfileActivity.class));
         });
+
+        android.view.View btnHealth = view.findViewById(R.id.btnHealthProfile);
+        if (btnHealth != null) {
+            btnHealth.setOnClickListener(v -> {
+                dialog.dismiss();
+                startActivity(new Intent(this, HealthProfileActivity.class));
+            });
+        }
+
+        android.view.View btnElderly = view.findViewById(R.id.btnElderlyMode);
+        if (btnElderly != null) {
+            btnElderly.setOnClickListener(v -> {
+                dialog.dismiss();
+                startActivity(new Intent(this, ElderlyModeActivity.class));
+            });
+        }
+
+        android.view.View btnNotif = view.findViewById(R.id.btnNotifications);
+        if (btnNotif != null) {
+            btnNotif.setOnClickListener(v -> {
+                dialog.dismiss();
+                // TODO: İleride bildirim ayarları ekranı eklenebilir
+                new AlertDialog.Builder(this)
+                        .setTitle("Bildirim Ayarları")
+                        .setMessage("Şu anda tüm acil uyarı bildirimleri ve mesh ağı mesaj bildirimleri aktiftir. Kapatılamaz.")
+                        .setPositiveButton("Tamam", null)
+                        .show();
+            });
+        }
+
+        android.view.View btnAbout = view.findViewById(R.id.btnAbout);
+        if (btnAbout != null) {
+            btnAbout.setOnClickListener(v -> {
+                dialog.dismiss();
+                new AlertDialog.Builder(this)
+                        .setTitle("Uygulama Hakkında")
+                        .setMessage("EmergencyMesh\n\nSürüm: 1.0.0\nAfet ve acil durumlarda internet olmadan iletişim kurmanızı sağlayan mesh ağı projesi.")
+                        .setPositiveButton("Tamam", null)
+                        .show();
+            });
+        }
 
         view.findViewById(R.id.btnLogout).setOnClickListener(v -> {
             dialog.dismiss();
@@ -196,8 +278,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void sendQuickStatus(android.view.View v, String statusText) {
-        v.performHapticFeedback(android.view.HapticFeedbackConstants.VIRTUAL_KEY); // Titreşim
-        if (!emergencyModeActive) {
+        v.performHapticFeedback(android.view.HapticFeedbackConstants.VIRTUAL_KEY);
+        if (!isEmergencyServiceRunning()) {
             if (hasAllPermissions()) {
                 startEmergencyMode();
             } else {
@@ -206,7 +288,12 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
-        // Servis üzerinden gönder (Diğer cihazlara yayılması için)
+        // Sesli bildirim — butona basılır basılmaz söyle
+        if (voiceAssistant != null) {
+            voiceAssistant.announceButtonAction(statusText);
+        }
+
+        // Servis üzerinden gönder
         Intent i = new Intent(this, EmergencyService.class);
         i.setAction(EmergencyService.ACTION_SEND_LOCAL_MESSAGE);
         i.putExtra(EmergencyService.EXTRA_LOCAL_MESSAGE, statusText);
@@ -216,7 +303,76 @@ public class MainActivity extends AppCompatActivity {
             startService(i);
         }
 
+        // Backend durum takibini başlat (ekip atanınca sesli bildirim)
+        startEmergencyStatusPolling();
+
         Toast.makeText(this, "Durum Yayınlanıyor: " + statusText, Toast.LENGTH_SHORT).show();
+    }
+
+    // ─── BACKEND DURUM TAKİBİ ──────────────────────────────────────────
+    private final Runnable statusPollRunnable = new Runnable() {
+        @Override
+        public void run() {
+            pollExecutor.execute(() -> checkEmergencyStatusFromBackend());
+            statusPollHandler.postDelayed(this, POLL_INTERVAL_MS);
+        }
+    };
+
+    private void startEmergencyStatusPolling() {
+        // Mevcut polling varsa yeniden başlatma
+        statusPollHandler.removeCallbacks(statusPollRunnable);
+        statusPollHandler.postDelayed(statusPollRunnable, POLL_INTERVAL_MS);
+    }
+
+    private void stopEmergencyStatusPolling() {
+        statusPollHandler.removeCallbacks(statusPollRunnable);
+    }
+
+    private void checkEmergencyStatusFromBackend() {
+        String userId = sessionManager.getUserId();
+        if (userId == null || userId.isEmpty()) return;
+
+        try {
+            URL url = new URL(BACKEND_BASE + "/api/emergency?userId=" + userId + "&status=IN_PROGRESS&size=1");
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("GET");
+            conn.setRequestProperty("User-Agent", "EmergencyMeshApp/1.0");
+            conn.setConnectTimeout(8000);
+            conn.setReadTimeout(8000);
+
+            int responseCode = conn.getResponseCode();
+            if (responseCode == 200) {
+                BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+                StringBuilder sb = new StringBuilder();
+                String line;
+                while ((line = reader.readLine()) != null) sb.append(line);
+                reader.close();
+
+                String json = sb.toString();
+                // Basit JSON parse: IN_PROGRESS vakası var mı?
+                boolean hasInProgress = json.contains("IN_PROGRESS");
+                boolean hasResolved   = json.contains("RESOLVED") && !hasInProgress;
+
+                runOnUiThread(() -> {
+                    if (hasInProgress && !"IN_PROGRESS".equals(lastKnownEmergencyStatus)) {
+                        lastKnownEmergencyStatus = "IN_PROGRESS";
+                        if (voiceAssistant != null) {
+                            voiceAssistant.speak(VoiceAssistant.MSG_ASSIGNED);
+                        }
+                        Toast.makeText(this, "🚑 Ekip atandı! Yardım yolda.", Toast.LENGTH_LONG).show();
+                    } else if (hasResolved && "IN_PROGRESS".equals(lastKnownEmergencyStatus)) {
+                        lastKnownEmergencyStatus = "RESOLVED";
+                        stopEmergencyStatusPolling();
+                        if (voiceAssistant != null) {
+                            voiceAssistant.speak(VoiceAssistant.MSG_RESOLVED);
+                        }
+                    }
+                });
+            }
+            conn.disconnect();
+        } catch (Exception e) {
+            android.util.Log.w("MainActivity", "Durum sorgusu başarısız: " + e.getMessage());
+        }
     }
 
     private boolean hasAllPermissions() {
@@ -447,7 +603,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void triggerFullSync() {
-        if (!emergencyModeActive) {
+        if (!isEmergencyServiceRunning()) {
             Toast.makeText(this, "Önce Acil Modu başlatın!", Toast.LENGTH_SHORT).show();
             return;
         }
@@ -499,7 +655,10 @@ public class MainActivity extends AppCompatActivity {
             Toast.makeText(this, "İzinler verildi! Acil Modu başlatabilirsiniz.", Toast.LENGTH_SHORT).show();
         }
 
+        emergencyModeActive = isEmergencyServiceRunning();
         if (emergencyModeActive) {
+            ((Button) findViewById(R.id.btnEmergency)).setText("AÇIK\n(KAPAT)");
+            startPulseAnimation();
             try {
                 Intent statusReq = new Intent(this, EmergencyService.class);
                 statusReq.setAction(EmergencyService.ACTION_REQUEST_STATUS);
@@ -510,13 +669,38 @@ public class MainActivity extends AppCompatActivity {
                 }
             } catch (Exception ignored) {
             }
+        } else {
+            ((Button) findViewById(R.id.btnEmergency)).setText("ACİL\nMOD");
+            stopPulseAnimation();
         }
+    }
+
+    private boolean isEmergencyServiceRunning() {
+        android.app.ActivityManager manager = (android.app.ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
+        if (manager != null) {
+            for (android.app.ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
+                if (EmergencyService.class.getName().equals(service.service.getClassName())) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     @Override
     protected void onPause() {
         super.onPause();
         unregisterReceiver(nodeReceiver);
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        stopEmergencyStatusPolling();
+        pollExecutor.shutdownNow();
+        if (voiceAssistant != null) {
+            voiceAssistant.shutdown();
+        }
     }
 
     private android.media.ToneGenerator sirenGen;

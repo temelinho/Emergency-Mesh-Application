@@ -12,8 +12,8 @@ import retrofit2.converter.gson.GsonConverterFactory;
 
 public class RetrofitClient {
     // ngrok adresi çevrimdışı olduğu için yerel bilgisayar IP'niz ayarlandı.
-    // Telefon ile bilgisayarın aynı WiFi ağına bağlı olduğundan emin olun.
-    private static final String BASE_URL = "http://10.27.6.21:8080/";
+    // Yeni VDS Sunucu IP'miz
+    private static final String BASE_URL = "http://37.247.101.86:8080/";
     private static Retrofit retrofit = null;
 
     public static Retrofit getClient() {

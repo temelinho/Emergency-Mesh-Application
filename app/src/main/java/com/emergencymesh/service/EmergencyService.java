@@ -45,7 +45,7 @@ public class EmergencyService extends Service implements
 
     private static final String TAG = "EmergencyService";
     private static final String CHANNEL_ID = "emergency_channel";
-    private static final boolean USE_WIFI_DIRECT = false;
+    private static final boolean USE_WIFI_DIRECT = true;
 
     // Broadcast actions
     public static final String ACTION_NODE_FOUND = "com.emergencymesh.NODE_FOUND";
@@ -110,10 +110,16 @@ public class EmergencyService extends Service implements
         super.onCreate();
         createNotificationChannel();
 
+        Intent notificationIntent = new Intent(this, com.emergencymesh.ui.MainActivity.class);
+        android.app.PendingIntent pendingIntent = android.app.PendingIntent.getActivity(
+                this, 0, notificationIntent,
+                android.app.PendingIntent.FLAG_IMMUTABLE | android.app.PendingIntent.FLAG_UPDATE_CURRENT);
+
         Notification notification = new NotificationCompat.Builder(this, CHANNEL_ID)
                 .setContentTitle("Acil Mod Aktif")
                 .setContentText("Cihaz düğüm olarak çalışıyor")
                 .setSmallIcon(android.R.drawable.stat_notify_more)
+                .setContentIntent(pendingIntent)
                 .build();
 
         // Android 14+ Uyumluluğu için Foreground Type Belirtimi
@@ -142,6 +148,7 @@ public class EmergencyService extends Service implements
 
         if (USE_WIFI_DIRECT) {
             wifiDirectManager = new WifiDirectManager(this, this);
+            wifiDirectManager.start();
         }
         networkMonitor = new NetworkMonitor(this, this);
         networkMonitor.start(); // EKSİK OLAN START EKLENDİ
@@ -187,6 +194,9 @@ public class EmergencyService extends Service implements
             } else {
                 bleStatus = "Hazır Değil";
             }
+            if (wifiDirectManager != null) {
+                wifiStatus = "Pasif Mod";
+            }
         } catch (Exception e) {
             bleStatus = "Hata";
         }
@@ -225,7 +235,30 @@ public class EmergencyService extends Service implements
     }
 
     private void processLocalMessageWithLocation(String content, Double lat, Double lon) {
-        Message msg = new Message(myNodeId, content, lat, lon);
+        // Sağlık profilini mesaja ekle
+        SessionManager session = new SessionManager(this);
+        String bloodType = session.getBloodType();
+        String chronicDisease = session.getChronicDisease();
+        String medication = session.getMedication();
+
+        StringBuilder enrichedContent = new StringBuilder(content);
+        if ((bloodType != null && !bloodType.isEmpty()) || 
+            (chronicDisease != null && !chronicDisease.isEmpty()) || 
+            (medication != null && !medication.isEmpty())) {
+            
+            enrichedContent.append("\n[SAĞLIK: ");
+            if (bloodType != null && !bloodType.isEmpty()) enrichedContent.append("Kan: ").append(bloodType).append(", ");
+            if (chronicDisease != null && !chronicDisease.isEmpty()) enrichedContent.append("Hastalık: ").append(chronicDisease).append(", ");
+            if (medication != null && !medication.isEmpty()) enrichedContent.append("İlaç: ").append(medication);
+            
+            // Sondaki virgül ve boşluğu temizle
+            if (enrichedContent.toString().endsWith(", ")) {
+                enrichedContent.setLength(enrichedContent.length() - 2);
+            }
+            enrichedContent.append("]");
+        }
+
+        Message msg = new Message(myNodeId, enrichedContent.toString(), lat, lon);
         db.insert(msg);
         notifyMessageReceived();
 
@@ -271,6 +304,8 @@ public class EmergencyService extends Service implements
         super.onDestroy();
         if (bleManager != null)
             bleManager.stop();
+        if (wifiDirectManager != null)
+            wifiDirectManager.stop();
         if (networkMonitor != null)
             networkMonitor.stop();
         handler.removeCallbacksAndMessages(null);
@@ -393,9 +428,17 @@ public class EmergencyService extends Service implements
     }
 
     private void updateNotification(String text) {
+        Intent notificationIntent = new Intent(this, com.emergencymesh.ui.MainActivity.class);
+        android.app.PendingIntent pendingIntent = android.app.PendingIntent.getActivity(
+                this, 0, notificationIntent,
+                android.app.PendingIntent.FLAG_IMMUTABLE | android.app.PendingIntent.FLAG_UPDATE_CURRENT);
+
         Notification n = new NotificationCompat.Builder(this, CHANNEL_ID)
-                .setContentTitle("Acil Mod Aktif").setContentText(text)
-                .setSmallIcon(android.R.drawable.stat_notify_more).build();
+                .setContentTitle("Acil Mod Aktif")
+                .setContentText(text)
+                .setSmallIcon(android.R.drawable.stat_notify_more)
+                .setContentIntent(pendingIntent)
+                .build();
         NotificationManager nm = getSystemService(NotificationManager.class);
         if (nm != null)
             nm.notify(1, n);
