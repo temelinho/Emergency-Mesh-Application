@@ -7,11 +7,10 @@ import android.content.IntentFilter;
 import android.os.Build;
 import android.os.Bundle;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.TextView;
-
-import androidx.appcompat.app.AppCompatActivity;
 
 import com.emergencymesh.R;
 import com.emergencymesh.data.Message;
@@ -25,7 +24,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
-public class ChatActivity extends AppCompatActivity {
+public class ChatActivity extends BaseActivity {
     private ArrayAdapter<String> messageAdapter;
     private final List<String> messageDisplayList = new ArrayList<>();
     private EditText editMessage;
@@ -33,6 +32,7 @@ public class ChatActivity extends AppCompatActivity {
     private MessageDatabase db;
     private final SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm", Locale.getDefault());
     private String myNodeId;
+    private ListView listView;
 
     private final BroadcastReceiver chatReceiver = new BroadcastReceiver() {
         @Override
@@ -53,10 +53,10 @@ public class ChatActivity extends AppCompatActivity {
 
         editMessage = findViewById(R.id.editMessage);
         txtMessageCount = findViewById(R.id.txtMessageCount);
+        listView = findViewById(R.id.listMessages);
 
-        ListView listMessages = findViewById(R.id.listMessages);
         messageAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, messageDisplayList);
-        listMessages.setAdapter(messageAdapter);
+        listView.setAdapter(messageAdapter);
 
         findViewById(R.id.btnSend).setOnClickListener(v -> {
             v.performHapticFeedback(android.view.HapticFeedbackConstants.KEYBOARD_TAP);
@@ -82,7 +82,6 @@ public class ChatActivity extends AppCompatActivity {
             startService(i);
         }
         editMessage.setText("");
-        // Local refresh is handled quickly or by broadcast
         refreshMessageList();
     }
 
@@ -94,36 +93,31 @@ public class ChatActivity extends AppCompatActivity {
             String sender = msg.getSenderId().equals(myNodeId) ? "Ben" : msg.getSenderId();
 
             String content = msg.getContent();
+
+            // Gizli İsim Mühürünü (|||) Çöz
+            if (content != null && content.contains("|||")) {
+                String[] parts = content.split("\\|\\|\\|", 2);
+                if (parts.length == 2) {
+                    // Eğer mesajı kendimiz atmadıysak, karşı tarafın gerçek adını kullan
+                    if (!msg.getSenderId().equals(myNodeId)) {
+                        sender = parts[0];
+                    }
+                    content = parts[1];
+                }
+            }
+
             if (content != null && content.length() >= 2 && content.startsWith("!")) {
                 String tag = content.substring(0, 2);
                 switch (tag) {
-                    case "!1":
-                        content = content.replaceFirst("!1", "✅ Güvendeyim").trim();
-                        break;
-                    case "!2":
-                        content = content.replaceFirst("!2", "⚕️ Tıbbi Yardım").trim();
-                        break;
-                    case "!3":
-                        content = content.replaceFirst("!3", "🏚️ Enkaz Altındayım").trim();
-                        break;
-                    case "!4":
-                        content = content.replaceFirst("!4", "🔥 Yangın").trim();
-                        break;
-                    case "!5":
-                        content = content.replaceFirst("!5", "💧 Erzak İhtiyacı").trim();
-                        break;
-                    case "!6":
-                        content = content.replaceFirst("!6", "⛺ Barınma İhtiyacı").trim();
-                        break;
-                    case "!7":
-                        content = content.replaceFirst("!7", "⚠️ Genel Tehlike").trim();
-                        break;
-                    case "!8":
-                        content = content.replaceFirst("!8", "🔋 Şarj Bitiyor").trim();
-                        break;
-                    case "!9":
-                        content = content.replaceFirst("!9", "🆘 Diğer").trim();
-                        break;
+                    case "!1": content = content.replaceFirst("!1", "✅ Güvendeyim").trim(); break;
+                    case "!2": content = content.replaceFirst("!2", "⚕️ Tıbbi Yardım").trim(); break;
+                    case "!3": content = content.replaceFirst("!3", "🏚️ Enkaz Altındayım").trim(); break;
+                    case "!4": content = content.replaceFirst("!4", "🔥 Yangın").trim(); break;
+                    case "!5": content = content.replaceFirst("!5", "💧 Erzak İhtiyacı").trim(); break;
+                    case "!6": content = content.replaceFirst("!6", "⛺ Barınma İhtiyacı").trim(); break;
+                    case "!7": content = content.replaceFirst("!7", "⚠️ Genel Tehlike").trim(); break;
+                    case "!8": content = content.replaceFirst("!8", "🔋 Şarj Bitiyor").trim(); break;
+                    case "!9": content = content.replaceFirst("!9", "🆘 Diğer").trim(); break;
                 }
             }
 
@@ -133,7 +127,6 @@ public class ChatActivity extends AppCompatActivity {
         if (txtMessageCount != null) {
             txtMessageCount.setText(messages.size() + " mesaj");
         }
-        ListView listView = findViewById(R.id.listMessages);
         listView.setSelection(messageAdapter.getCount() - 1);
     }
 

@@ -1,111 +1,134 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:background="@color/black"
-    android:padding="24dp">
+    android:background="?android:attr/colorBackground"
+    android:fillViewport="true">
 
-    <!-- Geri Butonu & Başlık -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:layout_marginBottom="32dp">
-        
-        <ImageView
-            android:id="@+id/btnBack"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
-            android:src="@android:drawable/ic_menu_revert"
-            app:tint="@color/white"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:clickable="true"
-            android:focusable="true"/>
+        android:orientation="vertical"
+        android:padding="24dp">
+
+        <!-- Header: Back Button + Title -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginTop="48dp"
+            android:layout_marginBottom="32dp">
             
+            <ImageButton
+                android:id="@+id/btnBack"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:padding="10dp"
+                android:scaleType="centerInside"
+                android:background="@drawable/back_button_bg"
+                android:src="@drawable/ic_back_chevron"
+                app:tint="@color/white" />
+                
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Sağlık Bilgilerim"
+                android:textColor="?android:attr/textColorPrimary"
+                android:textSize="?attr/textSizeH1"
+                android:textStyle="bold"
+                android:letterSpacing="0.02"
+                android:layout_marginStart="16dp"/>
+        </LinearLayout>
+
         <TextView
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Sağlık Bilgilerim"
+            android:text="Bu bilgiler afet anında atacağınız yardım mesajına otomatik eklenir ve kurtarma ekiplerinin size daha hazırlıklı ulaşmasını sağlar."
+            android:textColor="@color/text_secondary"
+            android:textSize="15sp"
+            android:lineSpacingExtra="4dp"
+            android:layout_marginBottom="32dp"/>
+
+        <!-- Kan Grubu (Dropdown) -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="20dp"
+            android:hint="Kan Grubu"
+            app:hintTextColor="@color/colorAccent"
+            app:boxStrokeColor="@color/colorAccent"
+            app:boxBackgroundColor="@color/surface_light"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu">
+
+            <com.google.android.material.textfield.MaterialAutoCompleteTextView
+                android:id="@+id/etBloodType"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="?android:attr/textColorPrimary"
+                android:textSize="?attr/textSizeBody"
+                android:inputType="none" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Kronik Hastalık -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="20dp"
+            android:hint="Kronik Hastalıklar"
+            app:hintTextColor="@color/colorAccent"
+            app:boxStrokeColor="@color/colorAccent"
+            app:boxBackgroundColor="@color/surface_light"
+            app:helperText="Yoksa boş bırakabilirsiniz"
+            app:helperTextTextColor="@color/text_hint"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etChronicDisease"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="?android:attr/textColorPrimary"
+                android:textSize="?attr/textSizeBody"
+                android:inputType="text" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Kullanılan İlaçlar -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="40dp"
+            android:hint="Düzenli Kullanılan İlaçlar"
+            app:hintTextColor="@color/colorAccent"
+            app:boxStrokeColor="@color/colorAccent"
+            app:boxBackgroundColor="@color/surface_light"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etMedication"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="?android:attr/textColorPrimary"
+                android:textSize="?attr/textSizeBody"
+                android:inputType="text" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnSaveHealth"
+            android:layout_width="match_parent"
+            android:layout_height="64dp"
+            android:text="BİLGİLERİ GÜNCELLE"
             android:textColor="@color/white"
-            android:textSize="22sp"
+            android:textSize="16sp"
             android:textStyle="bold"
-            android:layout_marginStart="16dp"/>
+            android:letterSpacing="0.05"
+            app:cornerRadius="16dp"
+            app:elevation="4dp"
+            android:backgroundTint="#3B82F6" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="32dp" />
+
     </LinearLayout>
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Bu bilgiler afet anında atacağınız yardım mesajına otomatik eklenir ve kurtarma ekiplerinin size daha hazırlıklı ulaşmasını sağlar."
-        android:textColor="#A0A0A0"
-        android:textSize="14sp"
-        android:layout_marginBottom="24dp"/>
-
-    <!-- Kan Grubu -->
-    <com.google.android.material.textfield.TextInputLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="Kan Grubu"
-        app:boxBackgroundColor="#1AFFFFFF"
-        app:boxStrokeColor="@color/white"
-        app:hintTextColor="#88FFFFFF"
-        android:layout_marginBottom="16dp">
-
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/etBloodType"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:textColor="@color/white"
-            android:inputType="text" />
-    </com.google.android.material.textfield.TextInputLayout>
-
-    <!-- Kronik Hastalık -->
-    <com.google.android.material.textfield.TextInputLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="Kronik Hastalıklar (Yoksa boş bırakın)"
-        app:boxBackgroundColor="#1AFFFFFF"
-        app:boxStrokeColor="@color/white"
-        app:hintTextColor="#88FFFFFF"
-        android:layout_marginBottom="16dp">
-
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/etChronicDisease"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:textColor="@color/white"
-            android:inputType="text" />
-    </com.google.android.material.textfield.TextInputLayout>
-
-    <!-- Kullanılan İlaçlar -->
-    <com.google.android.material.textfield.TextInputLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="Düzenli Kullanılan İlaçlar"
-        app:boxBackgroundColor="#1AFFFFFF"
-        app:boxStrokeColor="@color/white"
-        app:hintTextColor="#88FFFFFF"
-        android:layout_marginBottom="24dp">
-
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/etMedication"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:textColor="@color/white"
-            android:inputType="text" />
-    </com.google.android.material.textfield.TextInputLayout>
-
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/btnSaveHealth"
-        android:layout_width="match_parent"
-        android:layout_height="60dp"
-        android:backgroundTint="#3B82F6"
-        android:text="KAYDET"
-        android:textColor="@color/white"
-        android:textSize="16sp"
-        android:textStyle="bold"
-        app:cornerRadius="12dp" />
-
-</LinearLayout>
+</ScrollView>

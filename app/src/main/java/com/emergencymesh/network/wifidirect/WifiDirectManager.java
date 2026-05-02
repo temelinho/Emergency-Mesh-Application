@@ -20,6 +20,8 @@ import androidx.core.app.ActivityCompat;
 
 import java.net.InetAddress;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 public class WifiDirectManager {
@@ -29,16 +31,12 @@ public class WifiDirectManager {
         void onConnectionEstablished(boolean isGroupOwner, InetAddress groupOwnerAddress);
         void onConnectionLost();
         void onMessageReceived(String message);
-
-        /**
-         * Wi‑Fi Direct durumlarını UI'ya yansıtmak için opsiyonel callback.
-         * Mevcut implementasyonları bozmamak için default.
-         */
         default void onWifiStatus(String status, String detail) {}
     }
 
     private static final String TAG = "WifiDirectManager";
-    private static final int DISCOVERY_INTERVAL_MS = 15000;
+    private static final int DISCOVERY_INTERVAL_MS = 12000;
+    private static final int AUTO_CONNECT_DELAY_MS = 5000;
 
     private final Context ctx;
     private final Listener listener;
@@ -47,7 +45,11 @@ public class WifiDirectManager {
     private BroadcastReceiver receiver;
     private IntentFilter intentFilter;
     private final Handler handler = new Handler(Looper.getMainLooper());
+    
     private boolean isDiscovering = false;
+    private boolean isConnected = false;
+    private boolean isConnecting = false;
+    private String connectedDeviceAddress = null;
     private final List<WifiP2pDevice> currentPeers = new ArrayList<>();
 
     private MessageServer messageServer;
@@ -58,27 +60,12 @@ public class WifiDirectManager {
         this.listener = listener;
     }
 
-    public void sendMessage(String message) {
-        if (messageServer != null) {
-            messageServer.sendMessage(message);
-        }
-        if (messageClient != null) {
-            messageClient.sendMessage(message);
-        }
-    }
-
     public void start() {
         manager = (WifiP2pManager) ctx.getSystemService(Context.WIFI_P2P_SERVICE);
-        if (manager == null) {
-            if (listener != null) listener.onWifiStatus("Hata", "WifiP2pManager null");
-            return;
-        }
+        if (manager == null) return;
 
         channel = manager.initialize(ctx, Looper.getMainLooper(), null);
-        if (channel == null) {
-            if (listener != null) listener.onWifiStatus("Hata", "WifiP2P channel null");
-            return;
-        }
+        if (channel == null) return;
 
         setupIntentFilter();
         setupReceiver();
@@ -89,9 +76,13 @@ public class WifiDirectManager {
             ctx.registerReceiver(receiver, intentFilter);
         }
 
-        if (listener != null) listener.onWifiStatus("Pasif Mod", "Receiver registered, bekliyor...");
-        // Pasif mod: Açılışta otomatik tarama (discoverPeers) yapma
-        // startDiscovery();
+        resetWifiDirect();
+        handler.postDelayed(this::startDiscovery, 2000);
+    }
+
+    private void resetWifiDirect() {
+        if (manager == null || channel == null) return;
+        manager.removeGroup(channel, null);
     }
 
     private void setupIntentFilter() {
@@ -107,39 +98,15 @@ public class WifiDirectManager {
             @Override
             public void onReceive(Context context, Intent intent) {
                 String action = intent.getAction();
-
                 if (WifiP2pManager.WIFI_P2P_STATE_CHANGED_ACTION.equals(action)) {
-                    // WiFi Direct durumu değişti
                     int state = intent.getIntExtra(WifiP2pManager.EXTRA_WIFI_STATE, -1);
                     if (state == WifiP2pManager.WIFI_P2P_STATE_ENABLED) {
-                        Log.d(TAG, "WiFi Direct AÇIK — keşif başlatılıyor");
-                        if (listener != null) listener.onWifiStatus("Aktif", "WiFi Direct açıldı, keşif başlıyor...");
-                        // WiFi Direct aktif olunca otomatik keşfi başlat
-                        handler.postDelayed(() -> startDiscovery(), 1000);
+                        startDiscovery();
                     } else {
-                        Log.d(TAG, "WiFi Direct KAPALI");
-                        isDiscovering = false;
-                        handler.removeCallbacksAndMessages(null);
                         stopMessaging();
-                        if (listener != null) listener.onWifiStatus("Kapalı", "WiFi Direct devre dışı");
                     }
-
                 } else if (WifiP2pManager.WIFI_P2P_PEERS_CHANGED_ACTION.equals(action)) {
-                    if (manager != null && hasPermission()) {
-                        if (ActivityCompat.checkSelfPermission(ctx, getRequiredPermission()) != PackageManager.PERMISSION_GRANTED) {
-                            return;
-                        }
-                        manager.requestPeers(channel, new WifiP2pManager.PeerListListener() {
-                            @Override
-                            public void onPeersAvailable(WifiP2pDeviceList peers) {
-                                currentPeers.clear();
-                                currentPeers.addAll(peers.getDeviceList());
-                                if (listener != null) {
-                                    listener.onPeersAvailable(new ArrayList<>(currentPeers));
-                                }
-                            }
-                        });
-                    }
+                    requestPeers();
                 } else if (WifiP2pManager.WIFI_P2P_CONNECTION_CHANGED_ACTION.equals(action)) {
                     handleConnectionStatus(intent);
                 }
@@ -147,29 +114,149 @@ public class WifiDirectManager {
         };
     }
 
+    private void requestPeers() {
+        if (manager == null || channel == null || !hasPermission()) return;
+        manager.requestPeers(channel, peers -> {
+            currentPeers.clear();
+            currentPeers.addAll(peers.getDeviceList());
+            Collections.sort(currentPeers, (d1, d2) -> d1.status - d2.status);
+            if (listener != null) listener.onPeersAvailable(new ArrayList<>(currentPeers));
+            if (!isConnected) evaluateAutoConnect();
+        });
+    }
+
+    private void evaluateAutoConnect() {
+        if (currentPeers.isEmpty()) return;
+        
+        // Akıllı Ağ Seçimi (Smart Switch): Eğer mevcut bağlı değilsek, cihazları gruplandır ve seç.
+        // Android doğrudan RSSI vermediği için, en güncel ve en uygun (AVAILABLE) olanı seçiyoruz.
+        WifiP2pDevice bestDevice = null;
+
+        for (WifiP2pDevice device : currentPeers) {
+            if (device.status == WifiP2pDevice.AVAILABLE) {
+                bestDevice = device;
+                // Owner olan bir cihaz bulursak (zaten bir grubun sahibiyse) doğrudan ona atla ki güçlü bir ağa dahil olalım
+                if (device.isGroupOwner()) {
+                    break;
+                }
+            }
+        }
+
+        if (bestDevice != null && !isConnected && !isConnecting) {
+            isConnecting = true;
+            // Çarpışmayı önlemek için rastgele gecikme (Anti-Collision)
+            int randomDelay = new java.util.Random().nextInt(2000) + 500; // 500ms - 2500ms
+            final WifiP2pDevice target = bestDevice;
+            
+            handler.postDelayed(() -> {
+                if (!isConnected) connectToPeer(target);
+                else isConnecting = false;
+            }, randomDelay);
+        }
+    }
+
     private void handleConnectionStatus(Intent intent) {
+        isConnecting = false;
         NetworkInfo networkInfo = intent.getParcelableExtra(WifiP2pManager.EXTRA_NETWORK_INFO);
         if (networkInfo != null && networkInfo.isConnected()) {
             manager.requestConnectionInfo(channel, info -> {
                 if (info.groupFormed) {
-                    if (info.isGroupOwner) {
-                        startServer();
-                    } else {
-                        startClient(info.groupOwnerAddress);
-                    }
+                    isConnected = true;
+                    connectedDeviceAddress = (info.isGroupOwner) ? null : info.groupOwnerAddress.getHostAddress();
+                    if (info.isGroupOwner) startServer();
+                    else startClient(info.groupOwnerAddress);
                     if (listener != null) {
                         listener.onConnectionEstablished(info.isGroupOwner, info.groupOwnerAddress);
-                        listener.onWifiStatus("Bağlandı", "Group formed");
                     }
                 }
             });
         } else {
+            isConnected = false;
+            isConnecting = false;
+            connectedDeviceAddress = null;
             stopMessaging();
-            if (listener != null) {
-                listener.onConnectionLost();
-                listener.onWifiStatus("Kesildi", "Disconnected");
-            }
+            if (listener != null) listener.onConnectionLost();
         }
+    }
+
+    public void startDiscovery() {
+        if (manager == null || channel == null || !hasPermission()) return;
+        manager.discoverPeers(channel, new WifiP2pManager.ActionListener() {
+            @Override
+            public void onSuccess() {
+                isDiscovering = true;
+                scheduleNextDiscovery();
+            }
+            @Override
+            public void onFailure(int reason) {
+                if (reason == WifiP2pManager.BUSY) {
+                    handler.postDelayed(() -> startDiscovery(), 5000);
+                }
+            }
+        });
+    }
+
+    private final Runnable discoveryRunnable = new Runnable() {
+        @Override
+        public void run() {
+            if (isDiscovering) startDiscovery();
+        }
+    };
+
+    private void scheduleNextDiscovery() {
+        handler.removeCallbacks(discoveryRunnable);
+        handler.postDelayed(discoveryRunnable, DISCOVERY_INTERVAL_MS);
+    }
+
+    public void connectToPeer(final WifiP2pDevice device) {
+        if (manager == null || channel == null || device == null || isConnected) {
+            isConnecting = false;
+            return;
+        }
+        if (!hasPermission()) {
+            isConnecting = false;
+            return;
+        }
+        
+        WifiP2pConfig config = new WifiP2pConfig();
+        config.deviceAddress = device.deviceAddress;
+        
+        // Kararı tamamen Android sisteminin müzakeresine bırakıyoruz (Çarpışmayı engeller)
+        config.groupOwnerIntent = 0; 
+
+        if (listener != null) listener.onWifiStatus("Bağlanıyor...", "Cihaz: " + device.deviceName);
+
+        manager.stopPeerDiscovery(channel, new WifiP2pManager.ActionListener() {
+            @Override
+            public void onSuccess() {
+                manager.connect(channel, config, new WifiP2pManager.ActionListener() {
+                    @Override
+                    public void onSuccess() {
+                        // Bağlantı başarılı, status broadcast receiver tarafından yakalanacak
+                    }
+
+                    @Override
+                    public void onFailure(int reason) {
+                        if (listener != null) listener.onWifiStatus("Hata", "Bağlantı koptu, yeni ağ aranıyor.");
+                        isConnected = false;
+                        isConnecting = false;
+                        startDiscovery(); // Başarısız olursa hemen yeni ağ aramaya başla (Smart Switch)
+                    }
+                });
+            }
+            @Override
+            public void onFailure(int reason) {
+                // Discovery durdurulamazsa bile bağlanmayı dene
+                manager.connect(channel, config, new WifiP2pManager.ActionListener() {
+                    @Override
+                    public void onSuccess() {}
+                    @Override
+                    public void onFailure(int reason) {
+                        isConnecting = false;
+                    }
+                });
+            }
+        });
     }
 
     private void startServer() {
@@ -193,102 +280,20 @@ public class WifiDirectManager {
         if (messageClient != null) { messageClient.stop(); messageClient = null; }
     }
 
-    public void startDiscovery() {
-        if (manager == null || channel == null) return;
-        if (ActivityCompat.checkSelfPermission(ctx, getRequiredPermission()) != PackageManager.PERMISSION_GRANTED) {
-            Log.e(TAG, "İzin yok, keşif başlatılamıyor.");
-            if (listener != null) listener.onWifiStatus("İzin yok", "discoverPeers: " + getRequiredPermission());
-            return;
-        }
-        // Bazı cihazlarda (özellikle Android 13/14) önceki bir discovery durdurulmadan
-        // discoverPeers çağrılırsa sürekli BUSY (2) dönebiliyor. Önce durdurmayı dene.
-        manager.stopPeerDiscovery(channel, new WifiP2pManager.ActionListener() {
-            @Override
-            public void onSuccess() {
-                Log.d(TAG, "stopPeerDiscovery OK, discoverPeers çağrılıyor");
-                internalDiscoverPeers();
-            }
-
-            @Override
-            public void onFailure(int reason) {
-                Log.w(TAG, "stopPeerDiscovery fail: " + reason + " — yine de discoverPeers denenecek");
-                internalDiscoverPeers();
-            }
-        });
-    }
-
-    private void internalDiscoverPeers() {
-        manager.discoverPeers(channel, new WifiP2pManager.ActionListener() {
-            @Override
-            public void onSuccess() {
-                isDiscovering = true;
-                if (listener != null) listener.onWifiStatus("Aranıyor", "discoverPeers OK");
-                scheduleNextDiscovery();
-            }
-
-            @Override
-            public void onFailure(int reason) {
-                isDiscovering = false;
-
-                String humanReason;
-                switch (reason) {
-                    case WifiP2pManager.BUSY:
-                        humanReason = "Meşgul (kod 2) — Wi‑Fi Direct başka bir işlem tarafından kullanılıyor olabilir (hotspot / ekran yansıtma / Yakındaki Paylaşım).";
-                        // Bir süre sonra tekrar dene.
-                        handler.postDelayed(() -> startDiscovery(), 5000);
-                        break;
-                    case WifiP2pManager.P2P_UNSUPPORTED:
-                        humanReason = "Desteklenmiyor (kod 1) — Bu cihazda Wi‑Fi Direct donanımsal olarak kapalı.";
-                        break;
-                    case WifiP2pManager.ERROR:
-                    default:
-                        humanReason = "Genel hata (kod " + reason + ")";
-                        break;
-                }
-
-                Log.e(TAG, "discoverPeers başarısız: " + humanReason);
-                if (listener != null) listener.onWifiStatus("Hata", humanReason);
-            }
-        });
-    }
-
-    private void scheduleNextDiscovery() {
-        handler.removeCallbacksAndMessages(null);
-        handler.postDelayed(() -> {
-            if (isDiscovering) startDiscovery();
-        }, DISCOVERY_INTERVAL_MS);
-    }
-
-    public void connectToPeer(final WifiP2pDevice device) {
-        if (manager == null || channel == null || device == null) return;
-        if (ActivityCompat.checkSelfPermission(ctx, getRequiredPermission()) != PackageManager.PERMISSION_GRANTED) {
-            Log.e(TAG, "İzin yok, bağlantı başlatılamıyor.");
-            return;
-        }
-        WifiP2pConfig config = new WifiP2pConfig();
-        config.deviceAddress = device.deviceAddress;
-        config.groupOwnerIntent = 7;
-        manager.connect(channel, config, new WifiP2pManager.ActionListener() {
-            @Override
-            public void onSuccess() {
-                Log.d(TAG, "Bağlantı denemesi başladı.");
-            }
-            @Override
-            public void onFailure(int reason) {
-                Log.e(TAG, "Bağlantı başarısız: " + reason);
-            }
-        });
+    public void sendMessage(String message) {
+        if (messageServer != null) messageServer.sendMessage(message);
+        if (messageClient != null) messageClient.sendMessage(message);
     }
 
     public void stop() {
         isDiscovering = false;
+        isConnected = false;
         handler.removeCallbacksAndMessages(null);
         stopMessaging();
         try {
             ctx.unregisterReceiver(receiver);
             manager.removeGroup(channel, null);
-        } catch (Exception e) { Log.e(TAG, "Durdurma hatası", e); }
-        if (listener != null) listener.onWifiStatus("Kapalı", "Stopped");
+        } catch (Exception e) { /* ignored */ }
     }
 
     private boolean hasPermission() {

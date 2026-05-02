@@ -11,23 +11,20 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.emergencymesh.R;
 import com.emergencymesh.network.RetrofitClient;
 import com.emergencymesh.network.UserDto;
-import com.emergencymesh.util.SessionManager;
 
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-public class LoginActivity extends AppCompatActivity {
+public class LoginActivity extends BaseActivity {
 
     private EditText editPhone, editPassword;
-    private SessionManager sessionManager;
+    private Button btnLogin;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
-
-        sessionManager = new SessionManager(this);
         
         if (sessionManager.isLoggedIn()) {
             com.emergencymesh.util.NodeId.set(this, sessionManager.getUserId());

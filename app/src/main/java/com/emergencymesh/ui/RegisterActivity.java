@@ -24,19 +24,16 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-public class RegisterActivity extends AppCompatActivity {
+public class RegisterActivity extends BaseActivity {
 
     private EditText editUsername, editFirstName, editLastName, editPhone, editPassword;
     private AutoCompleteTextView editCity, editDistrict;
-    private SessionManager sessionManager;
     private List<CityDto.Info> citiesList = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_register);
-
-        sessionManager = new SessionManager(this);
 
         editUsername = findViewById(R.id.editUsername);
         editFirstName = findViewById(R.id.editFirstName);

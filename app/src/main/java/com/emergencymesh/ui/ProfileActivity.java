@@ -22,13 +22,12 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-public class ProfileActivity extends AppCompatActivity {
+public class ProfileActivity extends BaseActivity {
 
     private EditText editUsername, editFirstName, editLastName, editPhone;
     private AutoCompleteTextView editCity, editDistrict;
     private MaterialButton btnSave;
     private ImageButton btnBack;
-    private SessionManager sessionManager;
     private List<CityDto.Info> citiesList = new ArrayList<>();
 
     @Override
@@ -36,12 +35,16 @@ public class ProfileActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_profile);
 
-        sessionManager = new SessionManager(this);
-
         initViews();
         loadUserData();
 
-        btnBack.setOnClickListener(v -> finish());
+        btnBack.setOnClickListener(v -> {
+            android.content.Intent intent = new android.content.Intent(this, MainActivity.class);
+            intent.putExtra("REOPEN_SETTINGS", true);
+            intent.addFlags(android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP | android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP);
+            startActivity(intent);
+            finish();
+        });
         btnSave.setOnClickListener(v -> saveProfile());
 
         loadCities();
@@ -160,6 +163,11 @@ public class ProfileActivity extends AppCompatActivity {
                     // Sadece sunucu onay verirse lokal cihazı da güncelle
                     sessionManager.saveExtendedUser(username, phone, firstName, lastName, city, district);
                     Toast.makeText(ProfileActivity.this, "Profil başarıyla güncellendi.", Toast.LENGTH_SHORT).show();
+                    
+                    android.content.Intent intent = new android.content.Intent(ProfileActivity.this, MainActivity.class);
+                    intent.putExtra("REOPEN_SETTINGS", true);
+                    intent.addFlags(android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP | android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                    startActivity(intent);
                     finish();
                 } else {
                     String errorMsg = "Güncelleme başarısız: " + response.code();
@@ -181,5 +189,14 @@ public class ProfileActivity extends AppCompatActivity {
                 Toast.makeText(ProfileActivity.this, "Bağlantı hatası: Sunucuya ulaşılamıyor.", Toast.LENGTH_LONG).show();
             }
         });
+    }
+
+    @Override
+    public void onBackPressed() {
+        android.content.Intent intent = new android.content.Intent(this, MainActivity.class);
+        intent.putExtra("REOPEN_SETTINGS", true);
+        intent.addFlags(android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP | android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        startActivity(intent);
+        finish();
     }
 }

@@ -10,5 +10,11 @@
         <item name="android:textColorPrimary">@color/text_primary</item>
         <item name="android:textColorSecondary">@color/text_secondary</item>
         <item name="android:textColorHint">@color/text_hint</item>
+
+        <!-- Dynamic Font Sizes (Normal) -->
+        <item name="textSizeH1">24sp</item>
+        <item name="textSizeH2">20sp</item>
+        <item name="textSizeBody">16sp</item>
+        <item name="textSizeSmall">12sp</item>
     </style>
 </resources>

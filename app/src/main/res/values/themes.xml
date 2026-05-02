@@ -13,7 +13,33 @@
         <item name="android:textColorPrimary">@color/text_primary</item>
         <item name="android:textColorSecondary">@color/text_secondary</item>
         <item name="android:textColorHint">@color/text_hint</item>
+        <!-- Dynamic Font Sizes (Normal) -->
+        <item name="textSizeH1">24sp</item>
+        <item name="textSizeH2">20sp</item>
+        <item name="textSizeBody">16sp</item>
+        <item name="textSizeSmall">12sp</item>
     </style>
 
     <style name="Theme.EmergencyMeshApp" parent="Base.Theme.EmergencyMeshApp" />
+
+    <!-- Erişilebilirlik (Yaşlı) Modu Teması -->
+    <style name="Theme.EmergencyMeshApp.Accessibility" parent="Theme.Material3.Light.NoActionBar">
+        <item name="colorPrimary">#B22222</item> <!-- Daha kontrast kırmızı -->
+        <item name="colorOnPrimary">@color/white</item>
+        <item name="colorSecondary">#FF8C00</item>
+        <item name="colorOnSecondary">@color/white</item>
+        <item name="android:colorBackground">@color/white</item>
+        <item name="colorSurface">#F5F5F5</item>
+        <item name="colorOnSurface">@color/black</item>
+        <!-- Font ve Kontrast Ayarları -->
+        <item name="android:textColorPrimary">@color/black</item>
+        <item name="android:textColorSecondary">#444444</item>
+        <item name="android:textColorHint">#888888</item>
+        <item name="android:windowBackground">@color/white</item>
+        <!-- Dynamic Font Sizes (Elderly Mode - Large) -->
+        <item name="textSizeH1">32sp</item>
+        <item name="textSizeH2">28sp</item>
+        <item name="textSizeBody">22sp</item>
+        <item name="textSizeSmall">18sp</item>
+    </style>
 </resources>

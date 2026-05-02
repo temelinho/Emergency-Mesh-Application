@@ -43,7 +43,7 @@
                 android:layout_height="match_parent"
                 android:gravity="center"
                 android:text="?"
-                android:textColor="@color/white"
+                android:textColor="?android:attr/textColorPrimary"
                 android:textSize="26sp"
                 android:textStyle="bold"
                 android:elevation="4dp" />
@@ -72,8 +72,8 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Kullanıcı Adı"
-                android:textColor="@color/white"
-                android:textSize="20sp"
+                android:textColor="?android:attr/textColorPrimary"
+                android:textSize="?attr/textSizeH2"
                 android:textStyle="bold"
                 android:letterSpacing="0.02" />
 
@@ -82,8 +82,8 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="+90 5XX XXX XX XX"
-                android:textColor="#A0A0A0"
-                android:textSize="14sp"
+                android:textColor="?android:attr/textColorSecondary"
+                android:textSize="?attr/textSizeSmall"
                 android:layout_marginTop="4dp" />
         </LinearLayout>
     </LinearLayout>
@@ -91,7 +91,7 @@
     <View
         android:layout_width="match_parent"
         android:layout_height="1dp"
-        android:background="#1AFFFFFF"
+        android:background="?android:attr/listDivider"
         android:layout_marginBottom="16dp" />
 
     <!-- MENÜ ÖĞELERİ -->
@@ -138,16 +138,16 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Profili Düzenle"
-                    android:textColor="@color/white"
-                    android:textSize="16sp"
+                    android:textColor="?android:attr/textColorPrimary"
+                    android:textSize="?attr/textSizeBody"
                     android:textStyle="bold" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Kişisel ve iletişim bilgileri"
-                    android:textColor="#88FFFFFF"
-                    android:textSize="13sp"
+                    android:textColor="?android:attr/textColorSecondary"
+                    android:textSize="?attr/textSizeSmall"
                     android:layout_marginTop="2dp" />
             </LinearLayout>
 
@@ -195,16 +195,16 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Sağlık Bilgilerim"
-                    android:textColor="@color/white"
-                    android:textSize="16sp"
+                    android:textColor="?android:attr/textColorPrimary"
+                    android:textSize="?attr/textSizeBody"
                     android:textStyle="bold" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Kan grubu, ilaçlar, hastalıklar"
-                    android:textColor="#88FFFFFF"
-                    android:textSize="13sp"
+                    android:textColor="?android:attr/textColorSecondary"
+                    android:textSize="?attr/textSizeSmall"
                     android:layout_marginTop="2dp" />
             </LinearLayout>
 
@@ -251,26 +251,77 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Erişilebilirlik Modu"
-                    android:textColor="@color/white"
-                    android:textSize="16sp"
+                    android:text="Yaşlı (Erişilebilirlik) Modu"
+                    android:textColor="?android:attr/textColorPrimary"
+                    android:textSize="?attr/textSizeBody"
                     android:textStyle="bold" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Yaşlı / Çocuk için basit ekran"
-                    android:textColor="#88FFFFFF"
-                    android:textSize="13sp"
+                    android:text="Büyük fontlar ve aydınlık ekran"
+                    android:textColor="?android:attr/textColorSecondary"
+                    android:textSize="?attr/textSizeSmall"
                     android:layout_marginTop="2dp" />
             </LinearLayout>
 
+            <androidx.appcompat.widget.SwitchCompat
+                android:id="@+id/switchAccessibility"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:clickable="false"
+                android:focusable="false"
+                app:thumbTint="@color/white"
+                app:trackTint="#F97316" />
+        </LinearLayout>
+
+        <!-- SESLİ REHBER (SESLİ ÖNERİLER) -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:padding="20dp"
+            android:clickable="true"
+            android:focusable="true"
+            android:background="?attr/selectableItemBackground">
+
             <ImageView
-                android:layout_width="24dp"
-                android:layout_height="24dp"
-                android:src="@android:drawable/ic_media_play"
-                android:rotation="180"
-                app:tint="#55FFFFFF" />
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:src="@android:drawable/ic_btn_speak_now"
+                app:tint="@color/colorAccent" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:paddingStart="16dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Sesli Rehber"
+                    android:textColor="?android:attr/textColorPrimary"
+                    android:textSize="?attr/textSizeBody"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Butonlara tıklandığında sesli bilgi ver"
+                    android:textColor="?android:attr/textColorSecondary"
+                    android:textSize="?attr/textSizeSmall"
+                    android:layout_marginTop="2dp" />
+            </LinearLayout>
+
+            <androidx.appcompat.widget.SwitchCompat
+                android:id="@+id/switchVoiceAssistance"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:thumbTint="@color/colorAccent"
+                app:trackTint="@color/text_hint" />
         </LinearLayout>
 
         <!-- Bildirimler -->
@@ -309,16 +360,16 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Bildirimler"
-                    android:textColor="@color/white"
-                    android:textSize="16sp"
+                    android:textColor="?android:attr/textColorPrimary"
+                    android:textSize="?attr/textSizeBody"
                     android:textStyle="bold" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Uyarı sesleri ve bildirimler"
-                    android:textColor="#88FFFFFF"
-                    android:textSize="13sp"
+                    android:textColor="?android:attr/textColorSecondary"
+                    android:textSize="?attr/textSizeSmall"
                     android:layout_marginTop="2dp" />
             </LinearLayout>
 
@@ -366,16 +417,16 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Hakkında"
-                    android:textColor="@color/white"
-                    android:textSize="16sp"
+                    android:textColor="?android:attr/textColorPrimary"
+                    android:textSize="?attr/textSizeBody"
                     android:textStyle="bold" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Sürüm 1.0.0"
-                    android:textColor="#88FFFFFF"
-                    android:textSize="13sp"
+                    android:textColor="?android:attr/textColorSecondary"
+                    android:textSize="?attr/textSizeSmall"
                     android:layout_marginTop="2dp" />
             </LinearLayout>
 
@@ -392,7 +443,7 @@
     <View
         android:layout_width="match_parent"
         android:layout_height="1dp"
-        android:background="#1AFFFFFF"
+        android:background="?android:attr/listDivider"
         android:layout_marginTop="16dp"
         android:layout_marginBottom="24dp" />
 

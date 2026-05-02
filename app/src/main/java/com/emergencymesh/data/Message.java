@@ -134,45 +134,40 @@ public class Message {
     }
 
     // Serileştirme: transfer için basit format
-    // Format: id|senderId|content|timestamp|hopCount|lat|lng|priority
+    // Yeni Format: id|senderId|timestamp|hopCount|lat|lng|priority|content
+    // (İçerik en sonda olmalı ki içindeki | işaretleri sistemi bozmasın)
     public String serialize() {
         String latStr = latitude != null ? String.valueOf(latitude) : "";
         String lngStr = longitude != null ? String.valueOf(longitude) : "";
         String prioStr = priority != null ? priority : "LOW";
 
-        return id + "|" + senderId + "|" + content + "|" + timestamp + "|" + hopCount + "|" +
-                latStr + "|" + lngStr + "|" + prioStr;
+        return id + "|" + senderId + "|" + timestamp + "|" + hopCount + "|" +
+                latStr + "|" + lngStr + "|" + prioStr + "|" + content;
     }
 
     public static Message deserialize(String data) {
         try {
-            // Sınıra 8 diyoruz, böylece sondaki boşlukları vb kaybetmeden alabiliriz
+            // Sınıra 8 diyoruz, 8. parça (content) içindeki | işaretleri bölünmeyecek
             String[] parts = data.split("\\|", 8);
-            if (parts.length < 5)
-                return null; // Geriye dönük uyumluluk (en az 5 alan)
+            if (parts.length < 8)
+                return null;
 
             String id = parts[0];
             String senderId = parts[1];
-            String content = parts[2];
-            long timestamp = Long.parseLong(parts[3]);
-            int hopCount = Integer.parseInt(parts[4]);
+            long timestamp = Long.parseLong(parts[2]);
+            int hopCount = Integer.parseInt(parts[3]);
 
             Double latitude = null;
             Double longitude = null;
             String priority = "LOW";
 
-            if (parts.length >= 8) {
-                if (!parts[5].isEmpty())
-                    latitude = Double.parseDouble(parts[5]);
-                if (!parts[6].isEmpty())
-                    longitude = Double.parseDouble(parts[6]);
-                priority = parts[7];
-            } else {
-                // Eski mesaj formatı
-                if (content != null && content.startsWith("!")) {
-                    priority = "HIGH";
-                }
-            }
+            if (!parts[4].isEmpty())
+                latitude = Double.parseDouble(parts[4]);
+            if (!parts[5].isEmpty())
+                longitude = Double.parseDouble(parts[5]);
+            
+            priority = parts[6];
+            String content = parts[7];
 
             return new Message(id, senderId, content, timestamp, hopCount, latitude, longitude, priority);
         } catch (Exception e) {

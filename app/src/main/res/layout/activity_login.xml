@@ -6,13 +6,14 @@
     android:orientation="vertical"
     android:padding="24dp"
     android:gravity="center_vertical"
-    android:background="@color/background_dark">
+    android:background="?android:attr/colorBackground">
 
     <ImageView
-        android:layout_width="100dp"
-        android:layout_height="100dp"
+        android:layout_width="120dp"
+        android:layout_height="120dp"
         android:src="@drawable/logo_mesh_cross"
-        android:layout_marginBottom="16dp" 
+        android:layout_marginBottom="24dp"
+        android:layout_gravity="center_horizontal"
         app:tint="@color/colorPrimary" />
 
     <TextView
@@ -21,7 +22,8 @@
         android:text="AFET ACİL AĞ"
         android:textSize="32sp"
         android:textStyle="bold"
-        android:textColor="@color/white"
+        android:textColor="?android:attr/textColorPrimary"
+        android:layout_gravity="center_horizontal"
         android:layout_marginBottom="8dp"/>
 
     <TextView
@@ -29,8 +31,9 @@
         android:layout_height="wrap_content"
         android:text="Lütfen giriş yapın"
         android:textSize="16sp"
-        android:textColor="@color/text_secondary"
-        android:layout_marginBottom="32dp"/>
+        android:textColor="?android:attr/textColorSecondary"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginBottom="40dp"/>
 
     <com.google.android.material.textfield.TextInputLayout
         android:layout_width="match_parent"
@@ -38,6 +41,11 @@
         android:layout_marginBottom="16dp"
         app:hintTextColor="@color/colorAccent"
         app:boxStrokeColor="@color/colorAccent"
+        app:boxBackgroundColor="#15FFFFFF"
+        app:boxCornerRadiusTopStart="12dp"
+        app:boxCornerRadiusTopEnd="12dp"
+        app:boxCornerRadiusBottomStart="12dp"
+        app:boxCornerRadiusBottomEnd="12dp"
         style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
 
         <com.google.android.material.textfield.TextInputEditText
@@ -45,7 +53,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Telefon Numarası"
-            android:textColor="@color/text_primary"
+            android:textColor="?android:attr/textColorPrimary"
             android:inputType="phone" />
     </com.google.android.material.textfield.TextInputLayout>
 
@@ -55,6 +63,11 @@
         android:layout_marginBottom="32dp"
         app:hintTextColor="@color/colorAccent"
         app:boxStrokeColor="@color/colorAccent"
+        app:boxBackgroundColor="#15FFFFFF"
+        app:boxCornerRadiusTopStart="12dp"
+        app:boxCornerRadiusTopEnd="12dp"
+        app:boxCornerRadiusBottomStart="12dp"
+        app:boxCornerRadiusBottomEnd="12dp"
         style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
         app:endIconMode="password_toggle"
         app:endIconTint="@color/text_secondary">

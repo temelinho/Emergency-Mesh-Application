@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <attr name="textSizeH1" format="dimension" />
+    <attr name="textSizeH2" format="dimension" />
+    <attr name="textSizeBody" format="dimension" />
+    <attr name="textSizeSmall" format="dimension" />
+</resources>

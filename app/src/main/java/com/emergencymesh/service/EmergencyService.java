@@ -27,6 +27,8 @@ import com.emergencymesh.network.BackendSync;
 import com.emergencymesh.network.NetworkMonitor;
 import com.emergencymesh.network.ble.BleManager;
 import com.emergencymesh.network.wifidirect.WifiDirectManager;
+import com.emergencymesh.util.EarthquakeDetector;
+import com.emergencymesh.util.VoiceAssistant;
 import com.emergencymesh.util.NodeId;
 import com.emergencymesh.util.SessionManager;
 import com.google.android.gms.location.FusedLocationProviderClient;
@@ -74,12 +76,14 @@ public class EmergencyService extends Service implements
     private static final String CMD_SYNC_RECENT = "SYNC_RECENT:";
     private static final String CMD_SYNC_RESPONSE = "SYNC_RES:";
     private static final String CMD_MESSAGE = "MSG:";
+    private static final String CMD_QUAKE = "QUAKE:";
 
     private BleManager bleManager;
     private WifiDirectManager wifiDirectManager;
     private NetworkMonitor networkMonitor;
     private BackendSync backendSync;
     private MessageDatabase db;
+    private VoiceAssistant voiceAssistant;
     private String myNodeId;
 
     private final Handler handler = new Handler(Looper.getMainLooper());
@@ -158,6 +162,8 @@ public class EmergencyService extends Service implements
         if (backendSync != null) {
             backendSync.syncNow();
         }
+
+        voiceAssistant = new VoiceAssistant(this);
     }
 
     @Override
@@ -237,11 +243,16 @@ public class EmergencyService extends Service implements
     private void processLocalMessageWithLocation(String content, Double lat, Double lon) {
         // Sağlık profilini mesaja ekle
         SessionManager session = new SessionManager(this);
+        String userName = session.getUserName();
+        if (userName == null || userName.isEmpty()) userName = "Bilinmeyen Kişi";
+
         String bloodType = session.getBloodType();
         String chronicDisease = session.getChronicDisease();
         String medication = session.getMedication();
 
-        StringBuilder enrichedContent = new StringBuilder(content);
+        // İsmi gizli bir mühürle mesajın en başına ekle (ChatActivity çözecek)
+        StringBuilder enrichedContent = new StringBuilder();
+        enrichedContent.append(userName).append("|||").append(content);
         if ((bloodType != null && !bloodType.isEmpty()) || 
             (chronicDisease != null && !chronicDisease.isEmpty()) || 
             (medication != null && !medication.isEmpty())) {
@@ -262,14 +273,42 @@ public class EmergencyService extends Service implements
         db.insert(msg);
         notifyMessageReceived();
 
-        // Backend'e gönderilmeyenleri temizlemeyi dene (backendSync kendi içinde
-        // internet/hata yönetimi yapar)
+        // Backend'e gönderilmeyenleri temizlemeyi dene (backendSync kendi içinde internet/hata yönetimi yapar)
         if (backendSync != null) {
             backendSync.syncNow();
         }
 
+        // 1. KENDİ OLUŞTURDUĞUMUZ MESAJI ETRAFA (BLE ve Wi-Fi) FIRLAT (BROADCAST)
+        String payload = CMD_MESSAGE + msg.serialize();
         if (bleManager != null && bleManager.isReady()) {
-            bleManager.broadcast(CMD_MESSAGE + msg.serialize());
+            bleManager.broadcast(payload);
+        }
+        if (wifiDirectManager != null && isConnectedViaWifi) {
+            wifiDirectManager.sendMessage(payload);
+        }
+    }
+
+
+    private void triggerEarthquakeAlarm(String message) {
+        // Sesli uyarı
+        if (voiceAssistant != null) {
+            voiceAssistant.speak("DİKKAT! DEPREM UYARISI! " + message);
+        }
+
+        // Bildirim
+        Notification n = new NotificationCompat.Builder(this, CHANNEL_ID)
+                .setContentTitle("⚠️ DEPREM UYARISI")
+                .setContentText(message)
+                .setSmallIcon(android.R.drawable.ic_dialog_alert)
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setCategory(NotificationCompat.CATEGORY_ALARM)
+                .setAutoCancel(true)
+                .setDefaults(Notification.DEFAULT_ALL)
+                .build();
+        
+        NotificationManager nm = getSystemService(NotificationManager.class);
+        if (nm != null) {
+            nm.notify(911, n); // Özel bir ID
         }
     }
 
@@ -308,6 +347,8 @@ public class EmergencyService extends Service implements
             wifiDirectManager.stop();
         if (networkMonitor != null)
             networkMonitor.stop();
+        if (voiceAssistant != null)
+            voiceAssistant.shutdown();
         handler.removeCallbacksAndMessages(null);
     }
 
@@ -349,6 +390,8 @@ public class EmergencyService extends Service implements
     @Override
     public void onConnectionEstablished(boolean isGroupOwner, InetAddress groupOwnerAddress) {
         isConnectedViaWifi = true;
+        // İki cihaz bağlandığı saniye eksik mesajları birbirleriyle eşitlemek için tetikle
+        startFullSync();
     }
 
     @Override
@@ -387,6 +430,27 @@ public class EmergencyService extends Service implements
     private void handleIncomingMessage(String raw) {
         if (raw == null)
             return;
+
+        // TAM SENKRONİZASYON İSTEĞİ (Handshake) GELDİYSE
+        if (raw.startsWith(CMD_SYNC_FULL_REQUEST)) {
+            String idsStr = raw.substring(CMD_SYNC_FULL_REQUEST.length());
+            Set<String> remoteIds = new java.util.HashSet<>(java.util.Arrays.asList(idsStr.split(",")));
+            java.util.List<Message> missingForThem = db.getMessagesNotIn(remoteIds);
+            
+            // İZDİHAMI ÖNLEME (Anti-Spam): 
+            // Aynı anda 20 mesaj atıp Bluetooth'u çökertmemek için aralarına yarım saniye ekliyoruz.
+            int delayMs = 200;
+            for (Message m : missingForThem) {
+                String payload = CMD_SYNC_RESPONSE + m.serialize();
+                handler.postDelayed(() -> {
+                    if (bleManager != null && bleManager.isReady()) bleManager.broadcast(payload);
+                    if (wifiDirectManager != null && isConnectedViaWifi) wifiDirectManager.sendMessage(payload);
+                }, delayMs);
+                delayMs += 800; // Her mesaj arasında 0.8 saniye (800ms) boşluk bırak
+            }
+            return;
+        }
+
         String data = "";
         if (raw.startsWith(CMD_MESSAGE))
             data = raw.substring(CMD_MESSAGE.length());
@@ -403,20 +467,53 @@ public class EmergencyService extends Service implements
 
                 if (db.insert(msg)) {
                     notifyMessageReceived();
-                    // Mesh üzerinden gelen yeni mesajları da internet varsa hemen gönder
+                    
+                    // 1. MESH RELAY (AĞ SIÇRAMASI): Eğer A'dan mesaj aldıysam ve bu yeniyse, onu C'ye fırlat (Kurye Mantığı)
+                    String payload = CMD_MESSAGE + msg.serialize();
+                    if (bleManager != null && bleManager.isReady()) {
+                        bleManager.broadcast(payload);
+                    }
+                    if (wifiDirectManager != null && isConnectedViaWifi) {
+                        wifiDirectManager.sendMessage(payload);
+                    }
+
+                    // 2. İnternet varsa anında merkeze de (Backend) gönder
                     if (backendSync != null) {
                         backendSync.syncNow();
                     }
                 }
+            }
+        } else if (raw.startsWith(CMD_QUAKE)) {
+            // Mesh üzerinden deprem uyarısı geldi!
+            Log.w(TAG, "MESH EARTHQUAKE ALERT RECEIVED: " + raw);
+            triggerEarthquakeAlarm("Yakınlardaki bir cihaz sarsıntı algıladı! Deprem geliyor olabilir.");
+            
+            // Rebroadcast (Mesh'i genişlet)
+            if (bleManager != null && bleManager.isReady()) {
+                bleManager.broadcast(raw);
             }
         }
     }
 
     private void startFullSync() {
         Set<String> myIds = db.getAllIds();
-        String syncRequest = CMD_SYNC_FULL_REQUEST + String.join(",", myIds);
-        if (bleManager != null && bleManager.isReady())
+
+        // BLE MTU taşmasını önlemek için ID listesini en fazla 50 ile sınırla
+        // (Her UUID ~36 karakter, 50 x 36 = 1800 byte → BLE için güvenli sınır)
+        String idsToSend;
+        if (myIds.size() > 50) {
+            idsToSend = myIds.stream().limit(50).reduce("", (a, b) -> a.isEmpty() ? b : a + "," + b);
+        } else {
+            idsToSend = String.join(",", myIds);
+        }
+
+        String syncRequest = CMD_SYNC_FULL_REQUEST + idsToSend;
+        if (bleManager != null && bleManager.isReady()) {
             bleManager.broadcast(syncRequest);
+        }
+        if (wifiDirectManager != null && isConnectedViaWifi) {
+            wifiDirectManager.sendMessage(syncRequest);
+        }
     }
 
     private void createNotificationChannel() {

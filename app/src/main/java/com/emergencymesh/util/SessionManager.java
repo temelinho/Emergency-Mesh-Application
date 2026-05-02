@@ -18,6 +18,8 @@ public class SessionManager {
     private static final String KEY_BLOOD_TYPE = "blood_type";
     private static final String KEY_CHRONIC_DISEASE = "chronic_disease";
     private static final String KEY_MEDICATION = "medication";
+    private static final String KEY_ACCESSIBILITY_MODE = "accessibility_mode";
+    private static final String KEY_VOICE_ASSISTANCE = "voice_assistance";
 
     private final SharedPreferences pref;
     private final SharedPreferences.Editor editor;
@@ -77,11 +79,29 @@ public class SessionManager {
         return pref.getString(KEY_DISTRICT, "");
     }
 
-    public void saveHealthProfile(String bloodType, String chronicDisease, String medication) {
-        editor.putString(KEY_BLOOD_TYPE, bloodType);
-        editor.putString(KEY_CHRONIC_DISEASE, chronicDisease);
-        editor.putString(KEY_MEDICATION, medication);
+    public void saveHealthProfile(String blood, String disease, String meds) {
+        editor.putString(KEY_BLOOD_TYPE, blood);
+        editor.putString(KEY_CHRONIC_DISEASE, disease);
+        editor.putString(KEY_MEDICATION, meds);
         editor.apply();
+    }
+
+    public void setAccessibilityMode(boolean enabled) {
+        editor.putBoolean(KEY_ACCESSIBILITY_MODE, enabled);
+        editor.apply();
+    }
+
+    public boolean isAccessibilityModeEnabled() {
+        return pref.getBoolean(KEY_ACCESSIBILITY_MODE, false);
+    }
+
+    public void setVoiceAssistanceEnabled(boolean enabled) {
+        editor.putBoolean(KEY_VOICE_ASSISTANCE, enabled);
+        editor.apply();
+    }
+
+    public boolean isVoiceAssistanceEnabled() {
+        return pref.getBoolean(KEY_VOICE_ASSISTANCE, true); // Varsayılan olarak açık olsun
     }
 
     public String getBloodType() {

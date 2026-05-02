@@ -53,14 +53,13 @@ import android.os.Looper;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends BaseActivity {
 
     private static final int REQUEST_PERMISSIONS = 100;
     private static final int REQUEST_ENABLE_LOCATION = 101;
     private boolean emergencyModeActive = false;
     private boolean permissionRequestedOnce = false;
     private String myNodeId;
-    private SessionManager sessionManager;
     private final Map<String, Integer> nearbyNodes = new LinkedHashMap<>();
 
     // Sesli yönlendirme motoru
@@ -113,7 +112,6 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        sessionManager = new SessionManager(this);
         if (!sessionManager.isLoggedIn()) {
             startActivity(new Intent(this, LoginActivity.class));
             finish();
@@ -225,11 +223,34 @@ public class MainActivity extends AppCompatActivity {
             });
         }
 
-        android.view.View btnElderly = view.findViewById(R.id.btnElderlyMode);
-        if (btnElderly != null) {
-            btnElderly.setOnClickListener(v -> {
-                dialog.dismiss();
-                startActivity(new Intent(this, ElderlyModeActivity.class));
+        // Erişilebilirlik (Yaşlı) Modu Toggle
+        androidx.appcompat.widget.SwitchCompat switchAcc = view.findViewById(R.id.switchAccessibility);
+        if (switchAcc != null) {
+            switchAcc.setChecked(sessionManager.isAccessibilityModeEnabled());
+            switchAcc.setOnCheckedChangeListener((btn, isChecked) -> {
+                if (isChecked != sessionManager.isAccessibilityModeEnabled()) {
+                    sessionManager.setAccessibilityMode(isChecked);
+                    new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                        dialog.dismiss();
+                        recreate();
+                    }, 200);
+                }
+            });
+
+            view.findViewById(R.id.btnElderlyMode).setOnClickListener(v -> {
+                switchAcc.toggle();
+            });
+        }
+
+        // Sesli Rehber (Sesli Öneriler) Toggle
+        androidx.appcompat.widget.SwitchCompat switchVoice = view.findViewById(R.id.switchVoiceAssistance);
+        if (switchVoice != null) {
+            switchVoice.setChecked(sessionManager.isVoiceAssistanceEnabled());
+            switchVoice.setOnCheckedChangeListener((btn, isChecked) -> {
+                sessionManager.setVoiceAssistanceEnabled(isChecked);
+                if (isChecked && voiceAssistant != null) {
+                    voiceAssistant.speak("Sesli rehber aktif");
+                }
             });
         }
 
@@ -288,8 +309,8 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
-        // Sesli bildirim — butona basılır basılmaz söyle
-        if (voiceAssistant != null) {
+        // Sesli bildirim — butona basılır basılmaz söyle (Eğer açıksa)
+        if (voiceAssistant != null && sessionManager.isVoiceAssistanceEnabled()) {
             voiceAssistant.announceButtonAction(statusText);
         }
 
@@ -356,14 +377,14 @@ public class MainActivity extends AppCompatActivity {
                 runOnUiThread(() -> {
                     if (hasInProgress && !"IN_PROGRESS".equals(lastKnownEmergencyStatus)) {
                         lastKnownEmergencyStatus = "IN_PROGRESS";
-                        if (voiceAssistant != null) {
+                        if (voiceAssistant != null && sessionManager.isVoiceAssistanceEnabled()) {
                             voiceAssistant.speak(VoiceAssistant.MSG_ASSIGNED);
                         }
                         Toast.makeText(this, "🚑 Ekip atandı! Yardım yolda.", Toast.LENGTH_LONG).show();
                     } else if (hasResolved && "IN_PROGRESS".equals(lastKnownEmergencyStatus)) {
                         lastKnownEmergencyStatus = "RESOLVED";
                         stopEmergencyStatusPolling();
-                        if (voiceAssistant != null) {
+                        if (voiceAssistant != null && sessionManager.isVoiceAssistanceEnabled()) {
                             voiceAssistant.speak(VoiceAssistant.MSG_RESOLVED);
                         }
                     }
@@ -650,6 +671,12 @@ public class MainActivity extends AppCompatActivity {
         filter.addAction(EmergencyService.ACTION_STATUS_UPDATE);
         registerReceiver(nodeReceiver, filter,
                 (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) ? Context.RECEIVER_NOT_EXPORTED : 0);
+
+        // Ayarlara geri dönme mantığı
+        if (getIntent().getBooleanExtra("REOPEN_SETTINGS", false)) {
+            getIntent().removeExtra("REOPEN_SETTINGS");
+            new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(this::showSettingsDialog, 300);
+        }
 
         if (permissionRequestedOnce && hasAllPermissions()) {
             Toast.makeText(this, "İzinler verildi! Acil Modu başlatabilirsiniz.", Toast.LENGTH_SHORT).show();
