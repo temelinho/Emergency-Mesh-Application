@@ -198,7 +198,7 @@
             android:id="@+id/btnChat"
             android:layout_width="match_parent"
             android:layout_height="64dp"
-            android:layout_marginBottom="24dp"
+            android:layout_marginBottom="8dp"
             android:backgroundTint="@color/colorPrimary"
             app:icon="@android:drawable/ic_dialog_email"
             app:iconTint="@color/black"
@@ -209,6 +209,24 @@
             android:textSize="?attr/textSizeBody"
             app:cornerRadius="16dp"
             android:elevation="4dp" />
+
+        <!-- Özel / Kişiye Özel Mesaj Butonu -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnDirectMessage"
+            android:layout_width="match_parent"
+            android:layout_height="64dp"
+            android:layout_marginBottom="24dp"
+            android:backgroundTint="#1565C0"
+            app:icon="@android:drawable/ic_menu_myplaces"
+            app:iconTint="@color/white"
+            app:iconGravity="textStart"
+            android:text="KİŞİYE ÖZEL MESAJ"
+            android:textColor="@color/white"
+            android:textStyle="bold"
+            android:textSize="?attr/textSizeBody"
+            app:cornerRadius="16dp"
+            android:elevation="4dp" />
+
 
         <!-- Status Grid (Tactical: Dark Backgrounds, High-Contrast Icons) -->
         <GridLayout

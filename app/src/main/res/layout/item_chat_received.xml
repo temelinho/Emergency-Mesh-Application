@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Genel chat → alınan mesaj satırı (avatar + balon) -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:gravity="start"
+    android:orientation="horizontal"
+    android:paddingStart="12dp"
+    android:paddingEnd="56dp"
+    android:paddingTop="3dp"
+    android:paddingBottom="3dp">
+
+    <!-- Mini Avatar Dairesi -->
+    <FrameLayout
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginTop="4dp">
+
+        <View
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:background="@drawable/avatar_bg" />
+
+        <TextView
+            android:id="@+id/tvChatAvatarLetter"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:text="?"
+            android:textColor="#FFFFFF"
+            android:textSize="13sp"
+            android:textStyle="bold" />
+    </FrameLayout>
+
+    <!-- Balon + İsim -->
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:maxWidth="260dp">
+
+        <TextView
+            android:id="@+id/tvChatSenderName"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="#FFCC80"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="2dp"
+            android:layout_marginStart="2dp" />
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/bubble_received"
+            android:paddingStart="14dp"
+            android:paddingEnd="14dp"
+            android:paddingTop="10dp"
+            android:paddingBottom="8dp">
+
+            <TextView
+                android:id="@+id/tvChatContent"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="?android:attr/textColorPrimary"
+                android:textSize="14sp"
+                android:lineSpacingExtra="2dp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="end|center_vertical"
+                android:layout_marginTop="3dp">
+
+                <TextView
+                    android:id="@+id/tvChatTime"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="#777777"
+                    android:textSize="10sp" />
+
+                <!-- Long press ipucu -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="  · basılı tut → özel"
+                    android:textColor="#444444"
+                    android:textSize="9sp" />
+            </LinearLayout>
+        </LinearLayout>
+    </LinearLayout>
+</LinearLayout>

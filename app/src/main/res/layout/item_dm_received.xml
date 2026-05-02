@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- DM → Alınan mesaj balonu (avatar + isim + balon) -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:gravity="start"
+    android:orientation="horizontal"
+    android:paddingStart="12dp"
+    android:paddingEnd="64dp"
+    android:paddingTop="3dp"
+    android:paddingBottom="3dp">
+
+    <!-- Avatar -->
+    <FrameLayout
+        android:layout_width="36dp"
+        android:layout_height="36dp"
+        android:layout_marginEnd="10dp"
+        android:layout_marginTop="6dp">
+
+        <View
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:background="@drawable/avatar_bg" />
+
+        <TextView
+            android:id="@+id/tvDmSender"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:textColor="#FFFFFF"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+    </FrameLayout>
+
+    <!-- Balon -->
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="@drawable/bubble_received"
+        android:paddingStart="14dp"
+        android:paddingEnd="14dp"
+        android:paddingTop="10dp"
+        android:paddingBottom="8dp"
+        android:maxWidth="270dp">
+
+        <TextView
+            android:id="@+id/tvDmContent"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="?android:attr/textColorPrimary"
+            android:textSize="14sp"
+            android:lineSpacingExtra="2dp" />
+
+        <TextView
+            android:id="@+id/tvDmTime"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="end"
+            android:layout_marginTop="4dp"
+            android:textColor="#777777"
+            android:textSize="10sp" />
+    </LinearLayout>
+</LinearLayout>

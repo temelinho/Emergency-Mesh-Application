@@ -28,6 +28,7 @@ public class ProfileActivity extends BaseActivity {
     private AutoCompleteTextView editCity, editDistrict;
     private MaterialButton btnSave;
     private ImageButton btnBack;
+    private android.widget.TextView tvProfileAvatar;
     private List<CityDto.Info> citiesList = new ArrayList<>();
 
     @Override
@@ -47,6 +48,18 @@ public class ProfileActivity extends BaseActivity {
         });
         btnSave.setOnClickListener(v -> saveProfile());
 
+        // İptal butonu
+        android.view.View btnCancel = findViewById(R.id.btnCancelProfile);
+        if (btnCancel != null) {
+            btnCancel.setOnClickListener(v -> {
+                android.content.Intent intent = new android.content.Intent(this, MainActivity.class);
+                intent.putExtra("REOPEN_SETTINGS", true);
+                intent.addFlags(android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP | android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                startActivity(intent);
+                finish();
+            });
+        }
+
         loadCities();
 
         editCity.setOnItemClickListener((parent, view, position, id) -> {
@@ -56,14 +69,15 @@ public class ProfileActivity extends BaseActivity {
     }
 
     private void initViews() {
-        editUsername = findViewById(R.id.editUsername);
+        editUsername  = findViewById(R.id.editUsername);
         editFirstName = findViewById(R.id.editFirstName);
-        editLastName = findViewById(R.id.editLastName);
-        editPhone = findViewById(R.id.editPhone);
-        editCity = findViewById(R.id.editCity);
-        editDistrict = findViewById(R.id.editDistrict);
-        btnSave = findViewById(R.id.btnSave);
-        btnBack = findViewById(R.id.btnBack);
+        editLastName  = findViewById(R.id.editLastName);
+        editPhone     = findViewById(R.id.editPhone);
+        editCity      = findViewById(R.id.editCity);
+        editDistrict  = findViewById(R.id.editDistrict);
+        btnSave       = findViewById(R.id.btnSave);
+        btnBack       = findViewById(R.id.btnBack);
+        tvProfileAvatar = findViewById(R.id.tvProfileAvatar);
     }
 
     private void loadUserData() {
@@ -73,6 +87,14 @@ public class ProfileActivity extends BaseActivity {
         editLastName.setText(sessionManager.getLastName());
         editCity.setText(sessionManager.getCity(), false);
         editDistrict.setText(sessionManager.getDistrict(), false);
+
+        // Avatar harfi: Kullanıcı adının ilk harfi
+        if (tvProfileAvatar != null) {
+            String name = sessionManager.getUserName();
+            if (name != null && !name.isEmpty()) {
+                tvProfileAvatar.setText(String.valueOf(name.charAt(0)).toUpperCase());
+            }
+        }
     }
 
     private void loadCities() {

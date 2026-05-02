@@ -172,6 +172,12 @@ public class MainActivity extends BaseActivity {
             startActivity(new Intent(this, ChatActivity.class));
         });
 
+        // Kişiye Özel Mesaj Butonu
+        findViewById(R.id.btnDirectMessage).setOnClickListener(v -> {
+            v.performHapticFeedback(android.view.HapticFeedbackConstants.KEYBOARD_TAP);
+            startActivity(new Intent(this, DirectMessageActivity.class));
+        });
+
         // Ayarlar Butonu (Bottom Sheet)
         findViewById(R.id.btnSettings).setOnClickListener(v -> {
             v.performHapticFeedback(android.view.HapticFeedbackConstants.VIRTUAL_KEY);

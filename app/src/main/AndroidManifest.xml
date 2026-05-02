@@ -64,6 +64,7 @@
         </activity>
 
         <activity android:name=".ui.ChatActivity" android:exported="false" android:label="Mesaj Kutusu" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".ui.DirectMessageActivity" android:exported="false" android:label="Özel Mesaj" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".ui.RegisterActivity" android:exported="false" />
         <activity android:name=".ui.ProfileActivity" android:exported="false" android:label="Profili Düzenle" />
         <activity android:name=".ui.HealthProfileActivity" android:exported="false" android:label="Sağlık Bilgilerim" />

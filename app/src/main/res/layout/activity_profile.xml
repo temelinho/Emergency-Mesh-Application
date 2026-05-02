@@ -3,22 +3,26 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="?android:attr/colorBackground">
+    android:background="?android:attr/colorBackground"
+    android:fitsSystemWindows="true">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="24dp">
+        android:paddingStart="24dp"
+        android:paddingEnd="24dp"
+        android:paddingBottom="40dp">
 
+        <!-- ── Header: Geri + Başlık ──────────────────────────────────────── -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:gravity="center_vertical"
-            android:layout_marginTop="48dp"
-            android:layout_marginBottom="24dp">
-            
+            android:paddingTop="48dp"
+            android:layout_marginBottom="32dp">
+
             <ImageButton
                 android:id="@+id/btnBack"
                 android:layout_width="44dp"
@@ -33,19 +37,80 @@
                 android:layout_width="0dp"
                 android:layout_weight="1"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
+                android:layout_marginStart="12dp"
                 android:text="Profili Düzenle"
                 android:textColor="?android:attr/textColorPrimary"
                 android:textSize="?attr/textSizeH1"
                 android:textStyle="bold" />
         </LinearLayout>
 
+        <!-- ── Avatar Dairesi (Login'deki Logo gibi) ────────────────────── -->
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:gravity="center_horizontal">
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:orientation="vertical"
+                android:gravity="center">
+
+                <!-- Avatar Dairesi -->
+                <FrameLayout
+                    android:layout_width="96dp"
+                    android:layout_height="96dp"
+                    android:layout_gravity="center_horizontal">
+
+                    <View
+                        android:layout_width="96dp"
+                        android:layout_height="96dp"
+                        android:background="@drawable/avatar_circle_blue" />
+
+                    <TextView
+                        android:id="@+id/tvProfileAvatar"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:gravity="center"
+                        android:text="?"
+                        android:textColor="#FFFFFF"
+                        android:textSize="40sp"
+                        android:textStyle="bold" />
+                </FrameLayout>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:text="Bilgilerini güncel tut"
+                    android:textColor="?android:attr/textColorSecondary"
+                    android:textSize="14sp" />
+            </LinearLayout>
+        </FrameLayout>
+
+        <!-- ── Ayraç ──────────────────────────────────────────────────────── -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="?android:attr/textColorHint"
+            android:alpha="0.2"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="28dp" />
+
+        <!-- ── Kullanıcı Adı ───────────────────────────────────────────── -->
         <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="16dp"
             app:hintTextColor="@color/colorAccent"
             app:boxStrokeColor="@color/colorAccent"
+            app:boxBackgroundColor="#15FFFFFF"
+            app:boxCornerRadiusTopStart="12dp"
+            app:boxCornerRadiusTopEnd="12dp"
+            app:boxCornerRadiusBottomStart="12dp"
+            app:boxCornerRadiusBottomEnd="12dp"
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
 
             <com.google.android.material.textfield.TextInputEditText
@@ -53,10 +118,11 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:hint="Kullanıcı Adı"
-                android:textColor="@color/text_primary"
+                android:textColor="?android:attr/textColorPrimary"
                 android:inputType="text" />
         </com.google.android.material.textfield.TextInputLayout>
 
+        <!-- ── Ad / Soyad Satırı ─────────────────────────────────────────── -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -70,6 +136,11 @@
                 android:layout_marginEnd="6dp"
                 app:hintTextColor="@color/colorAccent"
                 app:boxStrokeColor="@color/colorAccent"
+                app:boxBackgroundColor="#15FFFFFF"
+                app:boxCornerRadiusTopStart="12dp"
+                app:boxCornerRadiusTopEnd="12dp"
+                app:boxCornerRadiusBottomStart="12dp"
+                app:boxCornerRadiusBottomEnd="12dp"
                 style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
 
                 <com.google.android.material.textfield.TextInputEditText
@@ -88,6 +159,11 @@
                 android:layout_marginStart="6dp"
                 app:hintTextColor="@color/colorAccent"
                 app:boxStrokeColor="@color/colorAccent"
+                app:boxBackgroundColor="#15FFFFFF"
+                app:boxCornerRadiusTopStart="12dp"
+                app:boxCornerRadiusTopEnd="12dp"
+                app:boxCornerRadiusBottomStart="12dp"
+                app:boxCornerRadiusBottomEnd="12dp"
                 style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
 
                 <com.google.android.material.textfield.TextInputEditText
@@ -100,12 +176,18 @@
             </com.google.android.material.textfield.TextInputLayout>
         </LinearLayout>
 
+        <!-- ── Telefon ───────────────────────────────────────────────────── -->
         <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="16dp"
             app:hintTextColor="@color/colorAccent"
             app:boxStrokeColor="@color/colorAccent"
+            app:boxBackgroundColor="#15FFFFFF"
+            app:boxCornerRadiusTopStart="12dp"
+            app:boxCornerRadiusTopEnd="12dp"
+            app:boxCornerRadiusBottomStart="12dp"
+            app:boxCornerRadiusBottomEnd="12dp"
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
 
             <com.google.android.material.textfield.TextInputEditText
@@ -113,15 +195,16 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:hint="Telefon Numarası"
-                android:textColor="@color/text_primary"
+                android:textColor="?android:attr/textColorPrimary"
                 android:inputType="phone" />
         </com.google.android.material.textfield.TextInputLayout>
 
+        <!-- ── İl / İlçe Satırı ──────────────────────────────────────────── -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:layout_marginBottom="32dp">
+            android:layout_marginBottom="36dp">
 
             <com.google.android.material.textfield.TextInputLayout
                 android:layout_width="0dp"
@@ -130,6 +213,11 @@
                 android:layout_marginEnd="6dp"
                 app:hintTextColor="@color/colorAccent"
                 app:boxStrokeColor="@color/colorAccent"
+                app:boxBackgroundColor="#15FFFFFF"
+                app:boxCornerRadiusTopStart="12dp"
+                app:boxCornerRadiusTopEnd="12dp"
+                app:boxCornerRadiusBottomStart="12dp"
+                app:boxCornerRadiusBottomEnd="12dp"
                 style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu">
 
                 <com.google.android.material.textfield.MaterialAutoCompleteTextView
@@ -148,6 +236,11 @@
                 android:layout_marginStart="6dp"
                 app:hintTextColor="@color/colorAccent"
                 app:boxStrokeColor="@color/colorAccent"
+                app:boxBackgroundColor="#15FFFFFF"
+                app:boxCornerRadiusTopStart="12dp"
+                app:boxCornerRadiusTopEnd="12dp"
+                app:boxCornerRadiusBottomStart="12dp"
+                app:boxCornerRadiusBottomEnd="12dp"
                 style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu">
 
                 <com.google.android.material.textfield.MaterialAutoCompleteTextView
@@ -160,15 +253,28 @@
             </com.google.android.material.textfield.TextInputLayout>
         </LinearLayout>
 
+        <!-- ── Kaydet Butonu (Login butonuyla aynı stil) ─────────────────── -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnSave"
             android:layout_width="match_parent"
             android:layout_height="60dp"
-            android:text="KAYDET"
+            android:text="DEĞİŞİKLİKLERİ KAYDET"
             android:textColor="@color/white"
             android:textStyle="bold"
+            android:textSize="15sp"
             app:cornerRadius="12dp"
-            android:layout_marginBottom="16dp"/>
+            android:layout_marginBottom="12dp" />
+
+        <!-- ── İptal (Login'deki "Kayıt Ol" linki gibi) ──────────────────── -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnCancelProfile"
+            style="@style/Widget.MaterialComponents.Button.TextButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="İptal"
+            android:textColor="@color/colorAccent"
+            android:layout_gravity="center"
+            android:padding="8dp" />
 
     </LinearLayout>
 </ScrollView>

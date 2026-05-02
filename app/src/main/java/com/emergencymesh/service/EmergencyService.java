@@ -68,6 +68,8 @@ public class EmergencyService extends Service implements
 
     public static final String ACTION_SEND_LOCAL_MESSAGE = "com.emergencymesh.SEND_LOCAL_MESSAGE";
     public static final String EXTRA_LOCAL_MESSAGE = "local_message";
+    public static final String ACTION_SEND_DIRECT_MESSAGE = "com.emergencymesh.SEND_DIRECT_MESSAGE";
+    public static final String EXTRA_DIRECT_RECEIVER = "direct_receiver";
     public static final String ACTION_TRIGGER_FULL_SYNC = "com.emergencymesh.TRIGGER_FULL_SYNC";
     public static final String ACTION_REQUEST_STATUS = "com.emergencymesh.REQUEST_STATUS";
 
@@ -77,6 +79,7 @@ public class EmergencyService extends Service implements
     private static final String CMD_SYNC_RESPONSE = "SYNC_RES:";
     private static final String CMD_MESSAGE = "MSG:";
     private static final String CMD_QUAKE = "QUAKE:";
+    private static final String CMD_DIRECT = "DM:"; // Özel mesaj komutu
 
     private BleManager bleManager;
     private WifiDirectManager wifiDirectManager;
@@ -180,6 +183,11 @@ public class EmergencyService extends Service implements
         if (intent != null && ACTION_SEND_LOCAL_MESSAGE.equals(intent.getAction())) {
             String content = intent.getStringExtra(EXTRA_LOCAL_MESSAGE);
             handleLocalOutgoingMessage(content);
+            return START_STICKY;
+        } else if (intent != null && ACTION_SEND_DIRECT_MESSAGE.equals(intent.getAction())) {
+            String content = intent.getStringExtra(EXTRA_LOCAL_MESSAGE);
+            String receiverId = intent.getStringExtra(EXTRA_DIRECT_RECEIVER);
+            handleDirectOutgoingMessage(content, receiverId);
             return START_STICKY;
         } else if (intent != null && ACTION_TRIGGER_FULL_SYNC.equals(intent.getAction())) {
             startFullSync();
@@ -288,6 +296,28 @@ public class EmergencyService extends Service implements
         }
     }
 
+    // ─── Özel Mesaj Gönderme ────────────────────────────────────────────────────
+    private void handleDirectOutgoingMessage(String content, String receiverId) {
+        if (content == null || content.trim().isEmpty() || receiverId == null) return;
+        SessionManager session = new SessionManager(this);
+        String userName = session.getUserName();
+        if (userName == null || userName.isEmpty()) userName = "Bilinmeyen Kişi";
+
+        // Özel mesajlarda da isim mührü kullan (DirectMessageActivity çözecek)
+        String enriched = userName + "|||" + content.trim();
+        Message msg = new Message(myNodeId, receiverId, enriched);
+        db.insert(msg);
+        notifyDirectMessageReceived(receiverId);
+
+        // Özel mesaj payload'ı — tüm ağa çıkılır ama sadece alıcı işler
+        String payload = CMD_DIRECT + msg.serialize();
+        if (bleManager != null && bleManager.isReady()) {
+            bleManager.broadcast(payload);
+        }
+        if (wifiDirectManager != null && isConnectedViaWifi) {
+            wifiDirectManager.sendMessage(payload);
+        }
+    }
 
     private void triggerEarthquakeAlarm(String message) {
         // Sesli uyarı
@@ -335,6 +365,13 @@ public class EmergencyService extends Service implements
     private void notifyMessageReceived() {
         Intent i = new Intent(ACTION_MESSAGE_RECEIVED);
         i.setPackage(getPackageName());
+        sendBroadcast(i);
+    }
+
+    private void notifyDirectMessageReceived(String peerId) {
+        Intent i = new Intent(ACTION_MESSAGE_RECEIVED);
+        i.setPackage(getPackageName());
+        i.putExtra("dm_peer_id", peerId);
         sendBroadcast(i);
     }
 
@@ -480,6 +517,28 @@ public class EmergencyService extends Service implements
                     // 2. İnternet varsa anında merkeze de (Backend) gönder
                     if (backendSync != null) {
                         backendSync.syncNow();
+                    }
+                }
+            }
+        } else if (raw.startsWith(CMD_DIRECT)) {
+            // Özel (kişiye özel) mesaj geldi!
+            String data2 = raw.substring(CMD_DIRECT.length());
+            Message dm = Message.deserialize(data2);
+            if (dm != null && !dm.getSenderId().equals(myNodeId)) {
+                if (myNodeId.equals(dm.getReceiverId())) {
+                    // Bu mesaj bana!
+                    if (db.insert(dm)) {
+                        notifyDirectMessageReceived(dm.getSenderId());
+                    }
+                } else {
+                    // Bana değil — ama mesajı relay ediyoruz (alıcıya ulaşsın)
+                    // (Gizlilik: sadece üzstbilgi relay edilir, içeriği relay etmiyoruz)
+                    String relayPayload = CMD_DIRECT + dm.serialize();
+                    if (bleManager != null && bleManager.isReady()) {
+                        bleManager.broadcast(relayPayload);
+                    }
+                    if (wifiDirectManager != null && isConnectedViaWifi) {
+                        wifiDirectManager.sendMessage(relayPayload);
                     }
                 }
             }

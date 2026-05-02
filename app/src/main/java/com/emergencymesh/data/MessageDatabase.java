@@ -14,7 +14,7 @@ import java.util.Set;
 public class MessageDatabase extends SQLiteOpenHelper {
 
     private static final String DB_NAME = "emergencymesh.db";
-    private static final int DB_VERSION = 2; // V1'den V2'ye geçiş
+    private static final int DB_VERSION = 3; // V2'den V3'e: receiver_id eklendi
 
     private static final String TABLE_MESSAGES = "messages";
     private static final String COL_ID = "id";
@@ -28,6 +28,9 @@ public class MessageDatabase extends SQLiteOpenHelper {
     private static final String COL_LATITUDE = "latitude";
     private static final String COL_LONGITUDE = "longitude";
     private static final String COL_PRIORITY = "priority";
+
+    // V3 Yeni Kolonlar
+    private static final String COL_RECEIVER_ID = "receiver_id"; // null = broadcast, dolu = özel mesaj
 
     private static MessageDatabase instance;
 
@@ -47,6 +50,7 @@ public class MessageDatabase extends SQLiteOpenHelper {
         String sql = "CREATE TABLE " + TABLE_MESSAGES + " (" +
                 COL_ID + " TEXT PRIMARY KEY, " +
                 COL_SENDER_ID + " TEXT, " +
+                COL_RECEIVER_ID + " TEXT, " +
                 COL_CONTENT + " TEXT, " +
                 COL_TIMESTAMP + " INTEGER, " +
                 COL_HOP_COUNT + " INTEGER, " +
@@ -65,6 +69,10 @@ public class MessageDatabase extends SQLiteOpenHelper {
             db.execSQL("ALTER TABLE " + TABLE_MESSAGES + " ADD COLUMN " + COL_LONGITUDE + " REAL;");
             db.execSQL("ALTER TABLE " + TABLE_MESSAGES + " ADD COLUMN " + COL_PRIORITY + " TEXT DEFAULT 'LOW';");
         }
+        if (oldVersion < 3) {
+            // V3: Özel mesajlaşma için receiver_id kolonu eklendi
+            db.execSQL("ALTER TABLE " + TABLE_MESSAGES + " ADD COLUMN " + COL_RECEIVER_ID + " TEXT;");
+        }
     }
 
     // Mesaj ekle (duplicate kontrolü ile)
@@ -77,6 +85,7 @@ public class MessageDatabase extends SQLiteOpenHelper {
         ContentValues cv = new ContentValues();
         cv.put(COL_ID, msg.getId());
         cv.put(COL_SENDER_ID, msg.getSenderId());
+        if (msg.getReceiverId() != null) cv.put(COL_RECEIVER_ID, msg.getReceiverId());
         cv.put(COL_CONTENT, msg.getContent());
         cv.put(COL_TIMESTAMP, msg.getTimestamp());
         cv.put(COL_HOP_COUNT, msg.getHopCount());
@@ -214,12 +223,75 @@ public class MessageDatabase extends SQLiteOpenHelper {
         return count;
     }
 
+    // ─── ÖZEL MESAJLAŞMA ────────────────────────────────────────────────────────
+
+    /**
+     * İki kullanıcı arasındaki özel mesajları getirir.
+     * sender veya receiver olarak myId ve peerId eşleşmeli.
+     */
+    public List<Message> getDirectConversation(String myId, String peerId) {
+        List<Message> list = new ArrayList<>();
+        SQLiteDatabase db = getReadableDatabase();
+
+        // (sender=me AND receiver=peer) OR (sender=peer AND receiver=me)
+        String sel = "((" + COL_SENDER_ID + "=? AND " + COL_RECEIVER_ID + "=?) OR (" +
+                COL_SENDER_ID + "=? AND " + COL_RECEIVER_ID + "=?))";
+        Cursor c = db.query(TABLE_MESSAGES, null, sel,
+                new String[]{myId, peerId, peerId, myId},
+                null, null, COL_TIMESTAMP + " ASC");
+
+        while (c.moveToNext()) {
+            list.add(cursorToMessage(c));
+        }
+        c.close();
+        return list;
+    }
+
+    /**
+     * Bu cihazın daha önce mesaj aldığı/gönderdiği benzersiz kullanıcı ID'lerini döndürür.
+     * Konuşma listesi için kullanılır.
+     */
+    public Set<String> getKnownUserIds(String myId) {
+        Set<String> result = new java.util.LinkedHashSet<>();
+        SQLiteDatabase db = getReadableDatabase();
+
+        // Bana özel mesaj gönderenler
+        Cursor c1 = db.query(TABLE_MESSAGES,
+                new String[]{COL_SENDER_ID},
+                COL_RECEIVER_ID + "=?",
+                new String[]{myId}, null, null, COL_TIMESTAMP + " DESC");
+        while (c1.moveToNext()) {
+            String sid = c1.getString(0);
+            if (!sid.equals(myId)) result.add(sid);
+        }
+        c1.close();
+
+        // Benim özel mesaj gönderdiğim alıcılar
+        Cursor c2 = db.query(TABLE_MESSAGES,
+                new String[]{COL_RECEIVER_ID},
+                COL_SENDER_ID + "=? AND " + COL_RECEIVER_ID + " IS NOT NULL",
+                new String[]{myId}, null, null, COL_TIMESTAMP + " DESC");
+        while (c2.moveToNext()) {
+            String rid = c2.getString(0);
+            if (rid != null && !rid.isEmpty()) result.add(rid);
+        }
+        c2.close();
+
+        return result;
+    }
+
     private Message cursorToMessage(Cursor c) {
         String id = c.getString(c.getColumnIndexOrThrow(COL_ID));
         String senderId = c.getString(c.getColumnIndexOrThrow(COL_SENDER_ID));
         String content = c.getString(c.getColumnIndexOrThrow(COL_CONTENT));
         long timestamp = c.getLong(c.getColumnIndexOrThrow(COL_TIMESTAMP));
         int hopCount = c.getInt(c.getColumnIndexOrThrow(COL_HOP_COUNT));
+
+        String receiverId = null;
+        int rcvIdx = c.getColumnIndex(COL_RECEIVER_ID);
+        if (rcvIdx != -1 && !c.isNull(rcvIdx)) {
+            receiverId = c.getString(rcvIdx);
+        }
 
         Double latitude = null;
         int latIdx = c.getColumnIndex(COL_LATITUDE);
@@ -239,6 +311,6 @@ public class MessageDatabase extends SQLiteOpenHelper {
             priority = c.getString(prioIdx);
         }
 
-        return new Message(id, senderId, content, timestamp, hopCount, latitude, longitude, priority);
+        return new Message(id, senderId, receiverId, content, timestamp, hopCount, latitude, longitude, priority);
     }
 }
