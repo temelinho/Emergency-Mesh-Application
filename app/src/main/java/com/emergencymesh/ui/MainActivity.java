@@ -216,26 +216,84 @@ public class MainActivity extends BaseActivity {
             return;
         }
 
-        List<String> nodeIds = new ArrayList<>(nearbyNodes.keySet());
-        String[] displayNames = new String[nodeIds.size()];
-        
-        for (int i = 0; i < nodeIds.size(); i++) {
-            String id = nodeIds.get(i);
-            int rssi = nearbyNodes.get(id);
-            String shortId = id.length() > 8 ? id.substring(0, 8) + "…" : id;
-            displayNames[i] = "Kullanıcı: " + shortId + " (Sinyal: " + rssi + " dBm)";
-        }
+        com.google.android.material.bottomsheet.BottomSheetDialog bottomSheet = new com.google.android.material.bottomsheet.BottomSheetDialog(this, R.style.Theme_EmergencyMeshApp);
+        View view = getLayoutInflater().inflate(R.layout.dialog_connected_nodes, null);
+        bottomSheet.setContentView(view);
 
-        new AlertDialog.Builder(this)
-                .setTitle("Ağdaki Düğümler (" + nodeIds.size() + ")")
-                .setItems(displayNames, (dialog, which) -> {
-                    String selectedNodeId = nodeIds.get(which);
-                    Intent intent = new Intent(MainActivity.this, DirectMessageActivity.class);
-                    intent.putExtra(DirectMessageActivity.EXTRA_PEER_ID, selectedNodeId);
-                    startActivity(intent);
-                })
-                .setPositiveButton("Kapat", null)
-                .show();
+        TextView tvSubtitle = view.findViewById(R.id.tvNodesSubtitle);
+        tvSubtitle.setText("Şu an çevrenizde " + nearbyNodes.size() + " cihaz var.\nÖzel mesaj göndermek için birine dokunun.");
+
+        ListView listView = view.findViewById(R.id.listConnectedNodes);
+        
+        List<String> nodeIds = new ArrayList<>(nearbyNodes.keySet());
+        
+        android.widget.ArrayAdapter<String> adapter = new android.widget.ArrayAdapter<String>(this, 0, nodeIds) {
+            @androidx.annotation.NonNull
+            @Override
+            public View getView(int position, @androidx.annotation.Nullable View convertView, @androidx.annotation.NonNull android.view.ViewGroup parent) {
+                if (convertView == null) {
+                    convertView = getLayoutInflater().inflate(R.layout.item_connected_node, parent, false);
+                }
+
+                String id = getItem(position);
+                int rssi = nearbyNodes.get(id);
+
+                TextView tvName = convertView.findViewById(R.id.tvNodeName);
+                TextView tvMac = convertView.findViewById(R.id.tvNodeMac);
+                TextView tvInitial = convertView.findViewById(R.id.tvNodeInitial);
+                TextView tvSignal = convertView.findViewById(R.id.tvNodeSignal);
+
+                String resolvedName = resolveNodeName(id);
+                tvName.setText(resolvedName);
+                
+                String initial = resolvedName.substring(0, 1).toUpperCase();
+                tvInitial.setText(initial);
+                
+                tvMac.setText("ID: " + (id.length() > 16 ? id.substring(0, 16) + "..." : id));
+                tvSignal.setText(rssi + " dBm");
+
+                // Sinyal rengi
+                int color = android.graphics.Color.parseColor("#4CAF50"); // Yeşil
+                if (rssi < -85) color = android.graphics.Color.parseColor("#F44336"); // Kırmızı
+                else if (rssi < -70) color = android.graphics.Color.parseColor("#FF9800"); // Turuncu
+                tvSignal.setTextColor(color);
+
+                return convertView;
+            }
+        };
+
+        listView.setAdapter(adapter);
+        listView.setOnItemClickListener((parent, v, position, id) -> {
+            String selectedNodeId = nodeIds.get(position);
+            Intent intent = new Intent(MainActivity.this, DirectMessageActivity.class);
+            intent.putExtra(DirectMessageActivity.EXTRA_PEER_ID, selectedNodeId);
+            intent.putExtra(DirectMessageActivity.EXTRA_PEER_NAME, resolveNodeName(selectedNodeId));
+            startActivity(intent);
+            bottomSheet.dismiss();
+        });
+
+        bottomSheet.show();
+    }
+
+    private String resolveNodeName(String nodeId) {
+        com.emergencymesh.data.MessageDatabase db = com.emergencymesh.data.MessageDatabase.getInstance(this);
+        java.util.List<com.emergencymesh.data.Message> all = db.getAll();
+        for (int i = all.size() - 1; i >= 0; i--) {
+            com.emergencymesh.data.Message m = all.get(i);
+            if (nodeId.equals(m.getSenderId())) {
+                String content = m.getContent();
+                if (content != null && content.contains("|||")) {
+                    String[] parts = content.split("\\|\\|\\|", 2);
+                    if (parts.length == 2 && !parts[0].trim().isEmpty()) {
+                        return parts[0].trim();
+                    }
+                }
+            }
+        }
+        
+        if (nodeId.startsWith("BLE:")) return "Yakındaki Cihaz (BLE)";
+        if (nodeId.startsWith("WIFI:")) return "Yakındaki Cihaz (WiFi)";
+        return "Cihaz " + (nodeId.length() > 4 ? nodeId.substring(nodeId.length() - 4) : nodeId);
     }
 
     private void sendQuickStatus(android.view.View v, String statusText) {

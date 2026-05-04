@@ -149,40 +149,75 @@ public class DirectMessageActivity extends BaseActivity {
 
     // ─── Yeni konuşma dialog ──────────────────────────────────────────────────
     private void showNewConversationDialog() {
-        View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_new_dm, null);
-        EditText editPeerId   = dialogView.findViewById(R.id.editNewDmPeerId);
-        EditText editPeerName = dialogView.findViewById(R.id.editNewDmPeerName);
+        // Basit bir username girişi — eski UUID listesi kaldırıldı
+        android.widget.LinearLayout layout = new android.widget.LinearLayout(this);
+        layout.setOrientation(android.widget.LinearLayout.VERTICAL);
+        int pad = (int) (16 * getResources().getDisplayMetrics().density);
+        layout.setPadding(pad, pad, pad, 0);
 
-        // Daha önce konuşulan kişileri listele
-        ListView lvContacts = dialogView.findViewById(R.id.lvDmContacts);
-        List<String> knownIds = new ArrayList<>(db.getKnownUserIds(myNodeId));
-        ArrayAdapter<String> ca = new ArrayAdapter<>(this,
-                android.R.layout.simple_list_item_1, knownIds);
-        lvContacts.setAdapter(ca);
-        lvContacts.setOnItemClickListener((parent, view, pos, id) -> {
-            editPeerId.setText(knownIds.get(pos));
-        });
+        TextView label = new TextView(this);
+        label.setText("Kullanıcı adı girin:");
+        label.setTextSize(14f);
+        label.setPadding(0, 0, 0, pad / 2);
+        layout.addView(label);
 
-        AlertDialog dialog = new AlertDialog.Builder(this)
-                .setView(dialogView)
-                .create();
+        EditText editUsername = new EditText(this);
+        editUsername.setHint("Örn: ahmet, ayse...");
+        editUsername.setSingleLine(true);
+        editUsername.setInputType(android.text.InputType.TYPE_CLASS_TEXT);
+        layout.addView(editUsername);
 
-        dialogView.findViewById(R.id.btnNewDmCancel).setOnClickListener(v -> dialog.dismiss());
-        dialogView.findViewById(R.id.btnNewDmStart).setOnClickListener(v -> {
-            String newId   = editPeerId.getText().toString().trim();
-            String newName = editPeerName.getText().toString().trim();
-            if (newId.isEmpty()) {
-                Toast.makeText(this, "Kullanıcı ID'si boş olamaz!", Toast.LENGTH_SHORT).show();
-                return;
+        new AlertDialog.Builder(this)
+                .setTitle("💬 Yeni Özel Mesaj")
+                .setView(layout)
+                .setPositiveButton("Başlat", (dialog, which) -> {
+                    String enteredName = editUsername.getText().toString().trim();
+                    if (enteredName.isEmpty()) {
+                        Toast.makeText(this, "Kullanıcı adı boş olamaz!", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    // Ağ geçmişinden bu kullanıcı adına ait Node ID'yi bul
+                    String foundId = resolveIdByUsername(enteredName);
+                    if (foundId == null) {
+                        Toast.makeText(this,
+                                "\"" + enteredName + "\" adlı kullanıcı henüz ağda mesaj atmamış.\n" +
+                                "Genel Sohbet'te mesajına uzun basarak özel mesaj başlat.",
+                                Toast.LENGTH_LONG).show();
+                        return;
+                    }
+                    peerId   = foundId;
+                    peerName = enteredName;
+                    if (txtPeerName != null) txtPeerName.setText("💬 " + peerName);
+                    TextView tvAvatar = findViewById(R.id.tvDmAvatarLetter);
+                    if (tvAvatar != null) tvAvatar.setText(String.valueOf(peerName.charAt(0)).toUpperCase());
+                    refreshMessages();
+                })
+                .setNegativeButton("İptal", null)
+                .show();
+
+        // Klavyeyi otomatik aç
+        editUsername.postDelayed(() -> {
+            editUsername.requestFocus();
+            android.view.inputmethod.InputMethodManager imm =
+                    (android.view.inputmethod.InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
+            if (imm != null) imm.showSoftInput(editUsername, android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT);
+        }, 200);
+    }
+
+    /** Mesaj geçmişinde kullanıcı adına göre Node ID bul */
+    private String resolveIdByUsername(String username) {
+        List<Message> all = db.getAll();
+        for (int i = all.size() - 1; i >= 0; i--) {
+            Message m = all.get(i);
+            String content = m.getContent();
+            if (content != null && content.contains("|||")) {
+                String[] parts = content.split("\\|\\|\\|", 2);
+                if (parts.length == 2 && parts[0].trim().equalsIgnoreCase(username)) {
+                    return m.getSenderId();
+                }
             }
-            peerId   = newId;
-            peerName = newName.isEmpty() ? shortenId(newId) : newName;
-            txtPeerName.setText("💬 " + peerName);
-            refreshMessages();
-            dialog.dismiss();
-        });
-
-        dialog.show();
+        }
+        return null;
     }
 
     private String shortenId(String id) {
@@ -196,14 +231,25 @@ public class DirectMessageActivity extends BaseActivity {
             super(DirectMessageActivity.this, 0, messageList);
         }
 
+        @Override
+        public int getViewTypeCount() {
+            return 2;
+        }
+
+        @Override
+        public int getItemViewType(int position) {
+            Message msg = getItem(position);
+            return (msg != null && myNodeId.equals(msg.getSenderId())) ? 0 : 1;
+        }
+
         @NonNull
         @Override
         public View getView(int pos, @Nullable View convertView, @NonNull ViewGroup parent) {
             Message msg = getItem(pos);
             boolean isMine = msg != null && myNodeId.equals(msg.getSenderId());
 
-            int layout = isMine ? R.layout.item_dm_sent : R.layout.item_dm_received;
             if (convertView == null) {
+                int layout = isMine ? R.layout.item_dm_sent : R.layout.item_dm_received;
                 convertView = LayoutInflater.from(getContext()).inflate(layout, parent, false);
             }
 
@@ -227,7 +273,10 @@ public class DirectMessageActivity extends BaseActivity {
 
                 if (tvContent != null) tvContent.setText(content);
                 if (tvTime != null)    tvTime.setText(time);
-                if (tvSender != null)  tvSender.setText(sender);
+                if (tvSender != null)  {
+                    String initial = sender.isEmpty() ? "?" : String.valueOf(sender.charAt(0)).toUpperCase();
+                    tvSender.setText(initial);
+                }
             }
             return convertView;
         }

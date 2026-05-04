@@ -138,21 +138,38 @@ public class RegisterActivity extends BaseActivity {
                     UserDto.Response user = response.body();
                     sessionManager.saveUser(user.getId(), user.getUsername(), user.getPhoneNumber());
                     NodeId.set(RegisterActivity.this, user.getId());
-                    Toast.makeText(RegisterActivity.this, "Kayıt başarılı", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(RegisterActivity.this, "✅ Kayıt başarılı! Hoş geldin " + user.getUsername(), Toast.LENGTH_SHORT).show();
                     Intent intent = new Intent(RegisterActivity.this, MainActivity.class);
                     intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                     startActivity(intent);
                     finish();
                 } else {
-                    String errorMsg = "Kayıt başarısız: " + response.code();
+                    // Sunucudan gelen hata mesajını düzgün parse et
+                    String serverMsg = "";
                     try {
                         if (response.errorBody() != null) {
-                            errorMsg += " - " + response.errorBody().string();
+                            String raw = response.errorBody().string();
+                            // JSON formatında {"message":"..."} veya düz metin olabilir
+                            if (raw.contains("\"message\"")) {
+                                int start = raw.indexOf("\"message\"") + 11;
+                                int end = raw.indexOf("\"", start);
+                                if (end > start) serverMsg = raw.substring(start, end);
+                            } else {
+                                serverMsg = raw;
+                            }
                         }
-                    } catch (Exception e) {
-                        // ignore
+                    } catch (Exception e) { /* ignore */ }
+
+                    if (response.code() == 400 || response.code() == 409) {
+                        String displayMsg = serverMsg.isEmpty()
+                                ? "Bu kullanıcı adı zaten alınmış. Lütfen başka bir isim seçin."
+                                : serverMsg;
+                        Toast.makeText(RegisterActivity.this, "⚠️ " + displayMsg, Toast.LENGTH_LONG).show();
+                    } else {
+                        Toast.makeText(RegisterActivity.this,
+                                "Kayıt başarısız (" + response.code() + "): " + serverMsg,
+                                Toast.LENGTH_LONG).show();
                     }
-                    Toast.makeText(RegisterActivity.this, errorMsg, Toast.LENGTH_LONG).show();
                 }
             }
 
