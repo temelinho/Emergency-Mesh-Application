@@ -11,6 +11,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -27,9 +28,12 @@ import com.emergencymesh.util.NodeId;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 public class DirectMessageActivity extends BaseActivity {
 
@@ -41,11 +45,16 @@ public class DirectMessageActivity extends BaseActivity {
     private String peerName;
 
     private MessageDatabase db;
-    private ListView listMessages;
+    private ListView listMessages, listConversations;
     private EditText editMessage;
-    private TextView txtPeerName, txtMessageCount;
+    private TextView txtTitle, txtSubTitle, tvAvatarLetter;
+    private View layoutInbox, layoutChat, layoutAvatar;
+    private ImageButton btnBack;
+
     private DmAdapter dmAdapter;
+    private ConversationAdapter convAdapter;
     private final List<Message> messageList = new ArrayList<>();
+    private final List<Conversation> conversationList = new ArrayList<>();
     private final SimpleDateFormat timeFmt = new SimpleDateFormat("HH:mm", Locale.getDefault());
 
     // ─── BroadcastReceiver ────────────────────────────────────────────────────
@@ -53,11 +62,7 @@ public class DirectMessageActivity extends BaseActivity {
         @Override
         public void onReceive(Context context, Intent intent) {
             if (EmergencyService.ACTION_MESSAGE_RECEIVED.equals(intent.getAction())) {
-                String dmPeer = intent.getStringExtra("dm_peer_id");
-                // Sadece bu konuşmaya ait mesajları yenile
-                if (dmPeer == null || dmPeer.equals(peerId)) {
-                    refreshMessages();
-                }
+                refreshData();
             }
         }
     };
@@ -70,53 +75,130 @@ public class DirectMessageActivity extends BaseActivity {
         db = MessageDatabase.getInstance(this);
         myNodeId = NodeId.get(this);
 
+        initViews();
+
         peerId   = getIntent().getStringExtra(EXTRA_PEER_ID);
         peerName = getIntent().getStringExtra(EXTRA_PEER_NAME);
 
-        // Eğer peerId yoksa kullanıcıya sor
-        if (peerId == null || peerId.isEmpty()) {
-            showNewConversationDialog();
+        if (peerId != null && !peerId.isEmpty()) {
+            openChat(peerId, peerName);
+        } else {
+            openInbox();
         }
-
-        initViews();
-        refreshMessages();
     }
 
     private void initViews() {
-        txtPeerName    = findViewById(R.id.txtDmPeerName);
-        txtMessageCount = findViewById(R.id.txtDmMessageCount);
-        editMessage    = findViewById(R.id.editDmMessage);
-        listMessages   = findViewById(R.id.listDmMessages);
-
-        if (peerName != null && !peerName.isEmpty()) {
-            txtPeerName.setText(peerName);
-            // Avatar harfini set et
-            TextView tvAvatar = findViewById(R.id.tvDmAvatarLetter);
-            if (tvAvatar != null) {
-                tvAvatar.setText(String.valueOf(peerName.charAt(0)).toUpperCase());
-            }
-        } else if (peerId != null) {
-            txtPeerName.setText(shortenId(peerId));
-        } else {
-            txtPeerName.setText("Yeni Konuşma");
-        }
+        txtTitle        = findViewById(R.id.txtDmPeerName);
+        txtSubTitle     = findViewById(R.id.txtDmSubTitle);
+        tvAvatarLetter  = findViewById(R.id.tvDmAvatarLetter);
+        layoutAvatar    = findViewById(R.id.layoutDmAvatar);
+        layoutInbox     = findViewById(R.id.layoutDmInbox);
+        layoutChat      = findViewById(R.id.layoutDmChat);
+        btnBack         = findViewById(R.id.btnDmBack);
+        editMessage     = findViewById(R.id.editDmMessage);
+        listMessages    = findViewById(R.id.listDmMessages);
+        listConversations = findViewById(R.id.listDmConversations);
 
         dmAdapter = new DmAdapter();
         listMessages.setAdapter(dmAdapter);
 
-        findViewById(R.id.btnDmBack).setOnClickListener(v -> finish());
-        findViewById(R.id.btnDmSend).setOnClickListener(v -> {
-            v.performHapticFeedback(android.view.HapticFeedbackConstants.KEYBOARD_TAP);
-            sendDirectMessage();
+        convAdapter = new ConversationAdapter();
+        listConversations.setAdapter(convAdapter);
+
+        btnBack.setOnClickListener(v -> {
+            if (layoutChat.getVisibility() == View.VISIBLE) {
+                openInbox();
+            } else {
+                finish();
+            }
         });
+
+        findViewById(R.id.btnDmSend).setOnClickListener(v -> sendDirectMessage());
         findViewById(R.id.btnDmNewContact).setOnClickListener(v -> showNewConversationDialog());
+
+        listConversations.setOnItemClickListener((parent, view, position, id) -> {
+            Conversation conv = conversationList.get(position);
+            openChat(conv.peerId, conv.peerName);
+        });
+    }
+
+    private void openInbox() {
+        peerId = null;
+        peerName = null;
+        layoutInbox.setVisibility(View.VISIBLE);
+        layoutChat.setVisibility(View.GONE);
+        layoutAvatar.setVisibility(View.GONE);
+        txtTitle.setText("Mesajlar");
+        txtSubTitle.setText("Sohbetlerin");
+        refreshData();
+    }
+
+    private void openChat(String id, String name) {
+        this.peerId = id;
+        this.peerName = name != null ? name : resolveUsernameById(id);
+        
+        layoutInbox.setVisibility(View.GONE);
+        layoutChat.setVisibility(View.VISIBLE);
+        layoutAvatar.setVisibility(View.VISIBLE);
+        
+        txtTitle.setText(peerName != null ? peerName : shortenId(peerId));
+        txtSubTitle.setText("Uçtan uca şifreli 🔒");
+        tvAvatarLetter.setText(String.valueOf(txtTitle.getText().charAt(0)).toUpperCase());
+
+        refreshData();
+    }
+
+    private void refreshData() {
+        if (layoutInbox.getVisibility() == View.VISIBLE) {
+            refreshConversationList();
+        } else {
+            refreshMessages();
+        }
+    }
+
+    private void refreshConversationList() {
+        List<Message> allMessages = db.getAll();
+        Map<String, Conversation> convMap = new HashMap<>();
+
+        for (Message m : allMessages) {
+            String otherSide = null;
+            if (m.getReceiverId() != null && !m.getReceiverId().isEmpty()) {
+                // Bu bir özel mesaj
+                if (m.getSenderId().equals(myNodeId)) {
+                    otherSide = m.getReceiverId();
+                } else if (m.getReceiverId().equals(myNodeId)) {
+                    otherSide = m.getSenderId();
+                }
+            }
+
+            if (otherSide != null) {
+                Conversation existing = convMap.get(otherSide);
+                if (existing == null || m.getTimestamp() > existing.lastTimestamp) {
+                    String name = resolveUsernameFromMessage(m, otherSide);
+                    convMap.put(otherSide, new Conversation(otherSide, name, m.getContent(), m.getTimestamp()));
+                }
+            }
+        }
+
+        conversationList.clear();
+        conversationList.addAll(convMap.values());
+        Collections.sort(conversationList, (c1, c2) -> Long.compare(c2.lastTimestamp, c1.lastTimestamp));
+        convAdapter.notifyDataSetChanged();
+    }
+
+    private void refreshMessages() {
+        if (peerId == null) return;
+        List<Message> msgs = db.getDirectConversation(myNodeId, peerId);
+        messageList.clear();
+        messageList.addAll(msgs);
+        dmAdapter.notifyDataSetChanged();
+        if (!messageList.isEmpty()) {
+            listMessages.setSelection(messageList.size() - 1);
+        }
     }
 
     private void sendDirectMessage() {
-        if (peerId == null || peerId.isEmpty()) {
-            showNewConversationDialog();
-            return;
-        }
+        if (peerId == null) return;
         String content = editMessage.getText().toString().trim();
         if (content.isEmpty()) return;
 
@@ -133,88 +215,62 @@ public class DirectMessageActivity extends BaseActivity {
         refreshMessages();
     }
 
-    private void refreshMessages() {
-        if (peerId == null || peerId.isEmpty()) return;
-        List<Message> msgs = db.getDirectConversation(myNodeId, peerId);
-        messageList.clear();
-        messageList.addAll(msgs);
-        dmAdapter.notifyDataSetChanged();
-        if (txtMessageCount != null) {
-            txtMessageCount.setText(msgs.size() + " mesaj");
-        }
-        if (!messageList.isEmpty()) {
-            listMessages.setSelection(messageList.size() - 1);
-        }
-    }
-
-    // ─── Yeni konuşma dialog ──────────────────────────────────────────────────
     private void showNewConversationDialog() {
-        // Basit bir username girişi — eski UUID listesi kaldırıldı
         android.widget.LinearLayout layout = new android.widget.LinearLayout(this);
         layout.setOrientation(android.widget.LinearLayout.VERTICAL);
         int pad = (int) (16 * getResources().getDisplayMetrics().density);
         layout.setPadding(pad, pad, pad, 0);
 
-        TextView label = new TextView(this);
-        label.setText("Kullanıcı adı girin:");
-        label.setTextSize(14f);
-        label.setPadding(0, 0, 0, pad / 2);
-        layout.addView(label);
-
         EditText editUsername = new EditText(this);
-        editUsername.setHint("Örn: ahmet, ayse...");
-        editUsername.setSingleLine(true);
-        editUsername.setInputType(android.text.InputType.TYPE_CLASS_TEXT);
+        editUsername.setHint("Kullanıcı adı girin...");
         layout.addView(editUsername);
 
         new AlertDialog.Builder(this)
-                .setTitle("💬 Yeni Özel Mesaj")
+                .setTitle("🔍 Kişi Bul")
                 .setView(layout)
-                .setPositiveButton("Başlat", (dialog, which) -> {
-                    String enteredName = editUsername.getText().toString().trim();
-                    if (enteredName.isEmpty()) {
-                        Toast.makeText(this, "Kullanıcı adı boş olamaz!", Toast.LENGTH_SHORT).show();
-                        return;
+                .setPositiveButton("Sohbet Başlat", (dialog, which) -> {
+                    String name = editUsername.getText().toString().trim();
+                    String foundId = resolveIdByUsername(name);
+                    if (foundId != null) {
+                        openChat(foundId, name);
+                    } else {
+                        Toast.makeText(this, "Kullanıcı bulunamadı!", Toast.LENGTH_SHORT).show();
                     }
-                    // Ağ geçmişinden bu kullanıcı adına ait Node ID'yi bul
-                    String foundId = resolveIdByUsername(enteredName);
-                    if (foundId == null) {
-                        Toast.makeText(this,
-                                "\"" + enteredName + "\" adlı kullanıcı henüz ağda mesaj atmamış.\n" +
-                                "Genel Sohbet'te mesajına uzun basarak özel mesaj başlat.",
-                                Toast.LENGTH_LONG).show();
-                        return;
-                    }
-                    peerId   = foundId;
-                    peerName = enteredName;
-                    if (txtPeerName != null) txtPeerName.setText("💬 " + peerName);
-                    TextView tvAvatar = findViewById(R.id.tvDmAvatarLetter);
-                    if (tvAvatar != null) tvAvatar.setText(String.valueOf(peerName.charAt(0)).toUpperCase());
-                    refreshMessages();
                 })
                 .setNegativeButton("İptal", null)
                 .show();
-
-        // Klavyeyi otomatik aç
-        editUsername.postDelayed(() -> {
-            editUsername.requestFocus();
-            android.view.inputmethod.InputMethodManager imm =
-                    (android.view.inputmethod.InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
-            if (imm != null) imm.showSoftInput(editUsername, android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT);
-        }, 200);
     }
 
-    /** Mesaj geçmişinde kullanıcı adına göre Node ID bul */
+    // ─── Yardımcı Metotlar ────────────────────────────────────────────────────
+    private String resolveUsernameFromMessage(Message m, String targetId) {
+        String content = m.getContent();
+        if (content != null && content.contains("|||")) {
+            String[] parts = content.split("\\|\\|\\|", 2);
+            if (parts.length == 2) {
+                if (m.getSenderId().equals(targetId)) return parts[0];
+            }
+        }
+        return resolveUsernameById(targetId);
+    }
+
+    private String resolveUsernameById(String id) {
+        List<Message> all = db.getAll();
+        for (int i = all.size() - 1; i >= 0; i--) {
+            Message m = all.get(i);
+            if (m.getSenderId().equals(id) && m.getContent() != null && m.getContent().contains("|||")) {
+                return m.getContent().split("\\|\\|\\|", 2)[0];
+            }
+        }
+        return null;
+    }
+
     private String resolveIdByUsername(String username) {
         List<Message> all = db.getAll();
         for (int i = all.size() - 1; i >= 0; i--) {
             Message m = all.get(i);
-            String content = m.getContent();
-            if (content != null && content.contains("|||")) {
-                String[] parts = content.split("\\|\\|\\|", 2);
-                if (parts.length == 2 && parts[0].trim().equalsIgnoreCase(username)) {
-                    return m.getSenderId();
-                }
+            if (m.getContent() != null && m.getContent().contains("|||")) {
+                String name = m.getContent().split("\\|\\|\\|", 2)[0];
+                if (name.equalsIgnoreCase(username)) return m.getSenderId();
             }
         }
         return null;
@@ -225,59 +281,60 @@ public class DirectMessageActivity extends BaseActivity {
         return id.length() > 8 ? id.substring(0, 8) + "…" : id;
     }
 
-    // ─── Custom Adapter ───────────────────────────────────────────────────────
-    private class DmAdapter extends ArrayAdapter<Message> {
-        DmAdapter() {
-            super(DirectMessageActivity.this, 0, messageList);
+    // ─── Veri Modeli ──────────────────────────────────────────────────────────
+    private static class Conversation {
+        String peerId, peerName, lastMessage;
+        long lastTimestamp;
+        Conversation(String id, String name, String msg, long ts) {
+            this.peerId = id; this.peerName = name; this.lastMessage = msg; this.lastTimestamp = ts;
         }
+    }
 
-        @Override
-        public int getViewTypeCount() {
-            return 2;
-        }
-
-        @Override
-        public int getItemViewType(int position) {
-            Message msg = getItem(position);
-            return (msg != null && myNodeId.equals(msg.getSenderId())) ? 0 : 1;
-        }
-
+    // ─── Adapters ─────────────────────────────────────────────────────────────
+    private class ConversationAdapter extends ArrayAdapter<Conversation> {
+        ConversationAdapter() { super(DirectMessageActivity.this, 0, conversationList); }
         @NonNull
         @Override
         public View getView(int pos, @Nullable View convertView, @NonNull ViewGroup parent) {
-            Message msg = getItem(pos);
-            boolean isMine = msg != null && myNodeId.equals(msg.getSenderId());
+            if (convertView == null) convertView = LayoutInflater.from(getContext()).inflate(R.layout.item_conversation, parent, false);
+            Conversation c = getItem(pos);
+            TextView tvName = convertView.findViewById(R.id.tvConvName);
+            TextView tvLast = convertView.findViewById(R.id.tvConvLastMessage);
+            TextView tvTime = convertView.findViewById(R.id.tvConvTime);
+            TextView tvAvatar = convertView.findViewById(R.id.tvConvAvatar);
 
-            if (convertView == null) {
-                int layout = isMine ? R.layout.item_dm_sent : R.layout.item_dm_received;
-                convertView = LayoutInflater.from(getContext()).inflate(layout, parent, false);
-            }
+            String displayName = c.peerName != null ? c.peerName : shortenId(c.peerId);
+            tvName.setText(displayName);
+            
+            String displayMsg = c.lastMessage;
+            if (displayMsg != null && displayMsg.contains("|||")) displayMsg = displayMsg.split("\\|\\|\\|", 2)[1];
+            tvLast.setText(displayMsg);
+            
+            tvTime.setText(timeFmt.format(new Date(c.lastTimestamp)));
+            tvAvatar.setText(String.valueOf(displayName.charAt(0)).toUpperCase());
+            return convertView;
+        }
+    }
 
+    private class DmAdapter extends ArrayAdapter<Message> {
+        DmAdapter() { super(DirectMessageActivity.this, 0, messageList); }
+        @Override public int getViewTypeCount() { return 2; }
+        @Override public int getItemViewType(int pos) { return myNodeId.equals(getItem(pos).getSenderId()) ? 0 : 1; }
+        @NonNull
+        @Override
+        public View getView(int pos, @Nullable View convertView, @NonNull ViewGroup parent) {
+            Message m = getItem(pos);
+            boolean isMine = myNodeId.equals(m.getSenderId());
+            if (convertView == null) convertView = LayoutInflater.from(getContext()).inflate(isMine ? R.layout.item_dm_sent : R.layout.item_dm_received, parent, false);
+            
             TextView tvContent = convertView.findViewById(R.id.tvDmContent);
-            TextView tvTime    = convertView.findViewById(R.id.tvDmTime);
-            TextView tvSender  = convertView.findViewById(R.id.tvDmSender);
-
-            if (msg != null) {
-                String time = timeFmt.format(new Date(msg.getTimestamp()));
-                String content = msg.getContent();
-                String sender = isMine ? "Ben" : shortenId(msg.getSenderId());
-
-                // İsim mühürünü çöz
-                if (content != null && content.contains("|||")) {
-                    String[] parts = content.split("\\|\\|\\|", 2);
-                    if (parts.length == 2) {
-                        if (!isMine) sender = parts[0];
-                        content = parts[1];
-                    }
-                }
-
-                if (tvContent != null) tvContent.setText(content);
-                if (tvTime != null)    tvTime.setText(time);
-                if (tvSender != null)  {
-                    String initial = sender.isEmpty() ? "?" : String.valueOf(sender.charAt(0)).toUpperCase();
-                    tvSender.setText(initial);
-                }
-            }
+            TextView tvTime = convertView.findViewById(R.id.tvDmTime);
+            
+            String content = m.getContent();
+            if (content != null && content.contains("|||")) content = content.split("\\|\\|\\|", 2)[1];
+            
+            tvContent.setText(content);
+            tvTime.setText(timeFmt.format(new Date(m.getTimestamp())));
             return convertView;
         }
     }
@@ -285,10 +342,9 @@ public class DirectMessageActivity extends BaseActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        IntentFilter f = new IntentFilter(EmergencyService.ACTION_MESSAGE_RECEIVED);
-        registerReceiver(dmReceiver, f,
+        registerReceiver(dmReceiver, new IntentFilter(EmergencyService.ACTION_MESSAGE_RECEIVED),
                 Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU ? Context.RECEIVER_NOT_EXPORTED : 0);
-        refreshMessages();
+        refreshData();
     }
 
     @Override
@@ -296,4 +352,14 @@ public class DirectMessageActivity extends BaseActivity {
         super.onPause();
         unregisterReceiver(dmReceiver);
     }
+
+    @Override
+    public void onBackPressed() {
+        if (layoutChat.getVisibility() == View.VISIBLE) {
+            openInbox();
+        } else {
+            super.onBackPressed();
+        }
+    }
 }
+

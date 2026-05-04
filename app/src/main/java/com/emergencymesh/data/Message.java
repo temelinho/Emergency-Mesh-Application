@@ -55,9 +55,25 @@ public class Message {
     }
 
     private static String determinePriority(String content) {
-        if (content != null && content.startsWith("!")) {
-            return "HIGH"; // Acil durum etiketleri (örn. !3, !4)
+        if (content == null) return "LOW";
+        
+        // İsmi temizleyip sadece koda bakmak için (Username|||!1 formatı için)
+        String actualContent = content;
+        if (content.contains("|||")) {
+            String[] parts = content.split("\\|\\|\\|", 2);
+            if (parts.length == 2) actualContent = parts[1];
         }
+
+        if (actualContent.startsWith("!3")) {
+            return "EMERGENCY"; // Enkaz Altındayım
+        } else if (actualContent.startsWith("!2") || actualContent.startsWith("!7")) {
+            return "HIGH";      // Yardım Gerekiyor veya Tehlike
+        } else if (actualContent.startsWith("!5")) {
+            return "MEDIUM";    // Gıda/Erzak İhtiyacı
+        } else if (actualContent.startsWith("!1") || actualContent.startsWith("!8")) {
+            return "LOW";       // Güvendeyim veya Şarj Az
+        }
+        
         return "LOW";
     }
 

@@ -77,6 +77,16 @@ public class MessageDatabase extends SQLiteOpenHelper {
 
     // Mesaj ekle (duplicate kontrolü ile)
     public boolean insert(Message msg) {
+        return insert(msg, false);
+    }
+
+    /**
+     * Mesaj ekle.
+     * @param alreadySynced true ise mesaj sunucuya zaten gönderilmiş sayılır
+     *                      (mesh'ten gelen mesajlar için kullanılır,
+     *                       böylece sadece orijinal gönderici sunucuya yükler)
+     */
+    public boolean insert(Message msg, boolean alreadySynced) {
         if (exists(msg.getId())) {
             return false; // Zaten var
         }
@@ -97,7 +107,7 @@ public class MessageDatabase extends SQLiteOpenHelper {
         if (msg.getPriority() != null)
             cv.put(COL_PRIORITY, msg.getPriority());
 
-        cv.put(COL_SYNCED, 0);
+        cv.put(COL_SYNCED, alreadySynced ? 1 : 0);
 
         long result = db.insert(TABLE_MESSAGES, null, cv);
         return result != -1;

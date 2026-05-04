@@ -277,7 +277,15 @@ public class EmergencyService extends Service implements
             enrichedContent.append("]");
         }
 
+        // Öncelik seviyesini belirle
+        String priority = "LOW";
+        if (content.startsWith("!3")) priority = "EMERGENCY";
+        else if (content.startsWith("!2") || content.startsWith("!7")) priority = "HIGH";
+        else if (content.startsWith("!5")) priority = "MEDIUM";
+        else if (content.startsWith("!1") || content.startsWith("!8")) priority = "LOW";
+
         Message msg = new Message(myNodeId, enrichedContent.toString(), lat, lon);
+        msg.setPriority(priority);
         db.insert(msg);
         notifyMessageReceived();
 
@@ -502,7 +510,7 @@ public class EmergencyService extends Service implements
                     return;
                 }
 
-                if (db.insert(msg)) {
+                if (db.insert(msg, true)) { // true = mesh'ten geldi, sunucuya tekrar gönderme
                     notifyMessageReceived();
                     
                     // 1. MESH RELAY (AĞ SIÇRAMASI): Eğer A'dan mesaj aldıysam ve bu yeniyse, onu C'ye fırlat (Kurye Mantığı)
@@ -514,10 +522,9 @@ public class EmergencyService extends Service implements
                         wifiDirectManager.sendMessage(payload);
                     }
 
-                    // 2. İnternet varsa anında merkeze de (Backend) gönder
-                    if (backendSync != null) {
-                        backendSync.syncNow();
-                    }
+                    // NOT: Mesh'ten gelen mesajlar sunucuya yüklenmez.
+                    // Sadece orijinal gönderici kendi mesajını sunucuya yükler.
+                    // Bu sayede admin panelde tekrar (duplicate) oluşmaz.
                 }
             }
         } else if (raw.startsWith(CMD_DIRECT)) {

@@ -221,10 +221,9 @@ public class MainActivity extends BaseActivity {
         bottomSheet.setContentView(view);
 
         TextView tvSubtitle = view.findViewById(R.id.tvNodesSubtitle);
-        tvSubtitle.setText("Şu an çevrenizde " + nearbyNodes.size() + " cihaz var.\nÖzel mesaj göndermek için birine dokunun.");
+        tvSubtitle.setText("Şu an çevrenizde " + nearbyNodes.size() + " aktif cihaz var.");
 
         ListView listView = view.findViewById(R.id.listConnectedNodes);
-        
         List<String> nodeIds = new ArrayList<>(nearbyNodes.keySet());
         
         android.widget.ArrayAdapter<String> adapter = new android.widget.ArrayAdapter<String>(this, 0, nodeIds) {
@@ -242,21 +241,32 @@ public class MainActivity extends BaseActivity {
                 TextView tvMac = convertView.findViewById(R.id.tvNodeMac);
                 TextView tvInitial = convertView.findViewById(R.id.tvNodeInitial);
                 TextView tvSignal = convertView.findViewById(R.id.tvNodeSignal);
+                TextView tvType = convertView.findViewById(R.id.tvNodeType);
 
                 String resolvedName = resolveNodeName(id);
                 tvName.setText(resolvedName);
+                tvInitial.setText(resolvedName.substring(0, 1).toUpperCase());
                 
-                String initial = resolvedName.substring(0, 1).toUpperCase();
-                tvInitial.setText(initial);
-                
-                tvMac.setText("ID: " + (id.length() > 16 ? id.substring(0, 16) + "..." : id));
+                tvMac.setText("ID: " + (id.length() > 20 ? id.substring(0, 20) + "..." : id));
                 tvSignal.setText(rssi + " dBm");
 
-                // Sinyal rengi
-                int color = android.graphics.Color.parseColor("#4CAF50"); // Yeşil
-                if (rssi < -85) color = android.graphics.Color.parseColor("#F44336"); // Kırmızı
-                else if (rssi < -70) color = android.graphics.Color.parseColor("#FF9800"); // Turuncu
+                // Sinyal rengi mantığı
+                int color;
+                if (rssi >= -67) color = 0xFF4CAF50; // Harika (Yeşil)
+                else if (rssi >= -80) color = 0xFFFF9800; // Orta (Turuncu)
+                else color = 0xFFF44336; // Zayıf (Kırmızı)
                 tvSignal.setTextColor(color);
+
+                // Bağlantı türünü yaz (BLE: veya WIFI: prefixine göre)
+                if (id.startsWith("BLE:")) {
+                    tvType.setText("Bluetooth");
+                    tvType.setTextColor(0xFF2196F3);
+                } else if (id.startsWith("WIFI:")) {
+                    tvType.setText("Wi-Fi Direct");
+                    tvType.setTextColor(0xFF9C27B0);
+                } else {
+                    tvType.setText("Mesh Node");
+                }
 
                 return convertView;
             }
@@ -278,22 +288,31 @@ public class MainActivity extends BaseActivity {
     private String resolveNodeName(String nodeId) {
         com.emergencymesh.data.MessageDatabase db = com.emergencymesh.data.MessageDatabase.getInstance(this);
         java.util.List<com.emergencymesh.data.Message> all = db.getAll();
+        
+        // 1. Önce ID eşleşmesi ara (Username|||Message formatı)
         for (int i = all.size() - 1; i >= 0; i--) {
             com.emergencymesh.data.Message m = all.get(i);
             if (nodeId.equals(m.getSenderId())) {
                 String content = m.getContent();
                 if (content != null && content.contains("|||")) {
-                    String[] parts = content.split("\\|\\|\\|", 2);
-                    if (parts.length == 2 && !parts[0].trim().isEmpty()) {
-                        return parts[0].trim();
-                    }
+                    String name = content.split("\\|\\|\\|", 2)[0].trim();
+                    if (!name.isEmpty()) return name;
                 }
             }
         }
         
+        // 2. Eğer özel mesajlaşma varsa oradan ismi çek
+        for (int i = all.size() - 1; i >= 0; i--) {
+            com.emergencymesh.data.Message m = all.get(i);
+            if (m.getReceiverId() != null && m.getReceiverId().equals(nodeId)) {
+                // Bizim gönderdiğimiz bir mesaj, alıcı ismini bulamayız burada ama 
+                // peer name resolve logic'i DM activity'de yapmıştık.
+            }
+        }
+
         if (nodeId.startsWith("BLE:")) return "Yakındaki Cihaz (BLE)";
         if (nodeId.startsWith("WIFI:")) return "Yakındaki Cihaz (WiFi)";
-        return "Cihaz " + (nodeId.length() > 4 ? nodeId.substring(nodeId.length() - 4) : nodeId);
+        return "Cihaz " + (nodeId.length() > 6 ? nodeId.substring(nodeId.length() - 6) : nodeId);
     }
 
     private void sendQuickStatus(android.view.View v, String statusText) {
