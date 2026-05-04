@@ -1,5 +1,7 @@
 package com.emergencymesh.ui;
 
+import android.view.View;
+
 import android.Manifest;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -69,7 +71,7 @@ public class MainActivity extends BaseActivity {
     private final ExecutorService pollExecutor = Executors.newSingleThreadExecutor();
     private String lastKnownEmergencyStatus = null;
     private static final long POLL_INTERVAL_MS = 45_000; // 45 saniye
-    private static final String BACKEND_BASE = "http://37.247.101.86:8080";
+    private static final String BACKEND_BASE = "http://37.247.101.86";
 
     private TextView txtNodeCount, txtInternetStatus, txtBleStatus, txtWifiStatus, txtStatusDetail;
 
@@ -178,10 +180,10 @@ public class MainActivity extends BaseActivity {
             startActivity(new Intent(this, DirectMessageActivity.class));
         });
 
-        // Ayarlar Butonu (Bottom Sheet)
+        // Ayarlar Butonu
         findViewById(R.id.btnSettings).setOnClickListener(v -> {
             v.performHapticFeedback(android.view.HapticFeedbackConstants.VIRTUAL_KEY);
-            showSettingsDialog();
+            startActivity(new Intent(this, SettingsActivity.class));
         });
 
         // Uygulama açılır açılmaz izinleri kontrol et ve iste
@@ -192,116 +194,48 @@ public class MainActivity extends BaseActivity {
         checkLocationServicesAndPrompt();
     }
 
-    private void showSettingsDialog() {
-        com.google.android.material.bottomsheet.BottomSheetDialog dialog =
-                new com.google.android.material.bottomsheet.BottomSheetDialog(this, R.style.Theme_EmergencyMeshApp);
-        android.view.View view = getLayoutInflater().inflate(R.layout.dialog_settings, null);
-        dialog.setContentView(view);
-
-        // Kullanıcı bilgilerini doldur
-        String userName = sessionManager.getUserName();
-        String userPhone = sessionManager.getPhone();
-
-        TextView tvInitial = view.findViewById(R.id.tvAvatarInitial);
-        TextView tvName    = view.findViewById(R.id.tvSettingsUserName);
-        TextView tvPhone   = view.findViewById(R.id.tvSettingsUserPhone);
-
-        if (tvName != null) {
-            tvName.setText(userName != null && !userName.isEmpty() ? userName : "Kullanıcı");
-        }
-        if (tvPhone != null) {
-            tvPhone.setText(userPhone != null && !userPhone.isEmpty() ? userPhone : "Telefon bilgisi yok");
-        }
-        if (tvInitial != null && userName != null && !userName.isEmpty()) {
-            tvInitial.setText(String.valueOf(userName.charAt(0)).toUpperCase());
-        }
-
-        view.findViewById(R.id.btnEditProfile).setOnClickListener(v -> {
-            dialog.dismiss();
-            startActivity(new Intent(this, ProfileActivity.class));
-        });
-
-        android.view.View btnHealth = view.findViewById(R.id.btnHealthProfile);
-        if (btnHealth != null) {
-            btnHealth.setOnClickListener(v -> {
-                dialog.dismiss();
-                startActivity(new Intent(this, HealthProfileActivity.class));
-            });
-        }
-
-        // Erişilebilirlik (Yaşlı) Modu Toggle
-        androidx.appcompat.widget.SwitchCompat switchAcc = view.findViewById(R.id.switchAccessibility);
-        if (switchAcc != null) {
-            switchAcc.setChecked(sessionManager.isAccessibilityModeEnabled());
-            switchAcc.setOnCheckedChangeListener((btn, isChecked) -> {
-                if (isChecked != sessionManager.isAccessibilityModeEnabled()) {
-                    sessionManager.setAccessibilityMode(isChecked);
-                    new Handler(Looper.getMainLooper()).postDelayed(() -> {
-                        dialog.dismiss();
-                        recreate();
-                    }, 200);
-                }
-            });
-
-            view.findViewById(R.id.btnElderlyMode).setOnClickListener(v -> {
-                switchAcc.toggle();
-            });
-        }
-
-        // Sesli Rehber (Sesli Öneriler) Toggle
-        androidx.appcompat.widget.SwitchCompat switchVoice = view.findViewById(R.id.switchVoiceAssistance);
-        if (switchVoice != null) {
-            switchVoice.setChecked(sessionManager.isVoiceAssistanceEnabled());
-            switchVoice.setOnCheckedChangeListener((btn, isChecked) -> {
-                sessionManager.setVoiceAssistanceEnabled(isChecked);
-                if (isChecked && voiceAssistant != null) {
-                    voiceAssistant.speak("Sesli rehber aktif");
-                }
-            });
-        }
-
-        android.view.View btnNotif = view.findViewById(R.id.btnNotifications);
-        if (btnNotif != null) {
-            btnNotif.setOnClickListener(v -> {
-                dialog.dismiss();
-                // TODO: İleride bildirim ayarları ekranı eklenebilir
-                new AlertDialog.Builder(this)
-                        .setTitle("Bildirim Ayarları")
-                        .setMessage("Şu anda tüm acil uyarı bildirimleri ve mesh ağı mesaj bildirimleri aktiftir. Kapatılamaz.")
-                        .setPositiveButton("Tamam", null)
-                        .show();
-            });
-        }
-
-        android.view.View btnAbout = view.findViewById(R.id.btnAbout);
-        if (btnAbout != null) {
-            btnAbout.setOnClickListener(v -> {
-                dialog.dismiss();
-                new AlertDialog.Builder(this)
-                        .setTitle("Uygulama Hakkında")
-                        .setMessage("EmergencyMesh\n\nSürüm: 1.0.0\nAfet ve acil durumlarda internet olmadan iletişim kurmanızı sağlayan mesh ağı projesi.")
-                        .setPositiveButton("Tamam", null)
-                        .show();
-            });
-        }
-
-        view.findViewById(R.id.btnLogout).setOnClickListener(v -> {
-            dialog.dismiss();
-            sessionManager.logout();
-            Toast.makeText(this, "Başarıyla çıkış yapıldı.", Toast.LENGTH_SHORT).show();
-            startActivity(new Intent(this, LoginActivity.class));
-            finish();
-        });
-
-        dialog.show();
-    }
-
     private void initViews() {
         txtNodeCount = findViewById(R.id.txtNodeCount);
         txtInternetStatus = findViewById(R.id.txtInternetStatus);
         txtBleStatus = findViewById(R.id.txtBleStatus);
         txtWifiStatus = findViewById(R.id.txtWifiStatus);
         txtStatusDetail = findViewById(R.id.txtStatusDetail);
+
+        View btnNodeBadge = findViewById(R.id.btnNodeBadge);
+        if (btnNodeBadge != null) {
+            btnNodeBadge.setOnClickListener(v -> {
+                v.performHapticFeedback(android.view.HapticFeedbackConstants.KEYBOARD_TAP);
+                showConnectedNodesDialog();
+            });
+        }
+    }
+
+    private void showConnectedNodesDialog() {
+        if (nearbyNodes.isEmpty()) {
+            Toast.makeText(this, "Ağda şu an bağlı düğüm bulunmuyor.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        List<String> nodeIds = new ArrayList<>(nearbyNodes.keySet());
+        String[] displayNames = new String[nodeIds.size()];
+        
+        for (int i = 0; i < nodeIds.size(); i++) {
+            String id = nodeIds.get(i);
+            int rssi = nearbyNodes.get(id);
+            String shortId = id.length() > 8 ? id.substring(0, 8) + "…" : id;
+            displayNames[i] = "Kullanıcı: " + shortId + " (Sinyal: " + rssi + " dBm)";
+        }
+
+        new AlertDialog.Builder(this)
+                .setTitle("Ağdaki Düğümler (" + nodeIds.size() + ")")
+                .setItems(displayNames, (dialog, which) -> {
+                    String selectedNodeId = nodeIds.get(which);
+                    Intent intent = new Intent(MainActivity.this, DirectMessageActivity.class);
+                    intent.putExtra(DirectMessageActivity.EXTRA_PEER_ID, selectedNodeId);
+                    startActivity(intent);
+                })
+                .setPositiveButton("Kapat", null)
+                .show();
     }
 
     private void sendQuickStatus(android.view.View v, String statusText) {
@@ -670,6 +604,7 @@ public class MainActivity extends BaseActivity {
     protected void onResume() {
         super.onResume();
         showEnvironmentHints();
+        // Geri dönüşte filtreleri tekrar kaydet
         IntentFilter filter = new IntentFilter();
         filter.addAction(EmergencyService.ACTION_NODE_FOUND);
         filter.addAction(EmergencyService.ACTION_MESSAGE_RECEIVED);
@@ -677,12 +612,6 @@ public class MainActivity extends BaseActivity {
         filter.addAction(EmergencyService.ACTION_STATUS_UPDATE);
         registerReceiver(nodeReceiver, filter,
                 (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) ? Context.RECEIVER_NOT_EXPORTED : 0);
-
-        // Ayarlara geri dönme mantığı
-        if (getIntent().getBooleanExtra("REOPEN_SETTINGS", false)) {
-            getIntent().removeExtra("REOPEN_SETTINGS");
-            new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(this::showSettingsDialog, 300);
-        }
 
         if (permissionRequestedOnce && hasAllPermissions()) {
             Toast.makeText(this, "İzinler verildi! Acil Modu başlatabilirsiniz.", Toast.LENGTH_SHORT).show();

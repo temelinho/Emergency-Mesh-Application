@@ -13,8 +13,36 @@
         android:layout_height="5dp"
         android:layout_gravity="center"
         android:layout_marginTop="16dp"
-        android:layout_marginBottom="24dp"
+        android:layout_marginBottom="8dp"
         android:background="@drawable/drag_handle_bg" />
+
+    <!-- Settings Header -->
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingStart="12dp"
+        android:paddingEnd="24dp"
+        android:layout_marginBottom="8dp">
+
+        <ImageButton
+            android:id="@+id/btnSettingsBack"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/ic_back_chevron"
+            app:tint="?android:attr/textColorPrimary"
+            android:padding="10dp"
+            android:scaleType="centerInside" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true"
+            android:text="Ayarlar"
+            android:textColor="?android:attr/textColorPrimary"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+    </RelativeLayout>
 
     <!-- Header: Avatar + İsim -->
     <LinearLayout
@@ -106,7 +134,10 @@
         <LinearLayout
             android:id="@+id/btnEditProfile"
             android:layout_width="match_parent"
-            android:layout_height="72dp"
+            android:layout_height="wrap_content"
+            android:minHeight="72dp"
+            android:paddingTop="16dp"
+            android:paddingBottom="16dp"
             android:orientation="horizontal"
             android:gravity="center_vertical"
             android:paddingStart="16dp"
@@ -163,7 +194,10 @@
         <LinearLayout
             android:id="@+id/btnHealthProfile"
             android:layout_width="match_parent"
-            android:layout_height="72dp"
+            android:layout_height="wrap_content"
+            android:minHeight="72dp"
+            android:paddingTop="16dp"
+            android:paddingBottom="16dp"
             android:orientation="horizontal"
             android:gravity="center_vertical"
             android:paddingStart="16dp"
@@ -220,7 +254,10 @@
         <LinearLayout
             android:id="@+id/btnElderlyMode"
             android:layout_width="match_parent"
-            android:layout_height="72dp"
+            android:layout_height="wrap_content"
+            android:minHeight="72dp"
+            android:paddingTop="16dp"
+            android:paddingBottom="16dp"
             android:orientation="horizontal"
             android:gravity="center_vertical"
             android:paddingStart="16dp"
@@ -328,7 +365,10 @@
         <LinearLayout
             android:id="@+id/btnNotifications"
             android:layout_width="match_parent"
-            android:layout_height="72dp"
+            android:layout_height="wrap_content"
+            android:minHeight="72dp"
+            android:paddingTop="16dp"
+            android:paddingBottom="16dp"
             android:orientation="horizontal"
             android:gravity="center_vertical"
             android:paddingStart="16dp"
@@ -385,7 +425,10 @@
         <LinearLayout
             android:id="@+id/btnAbout"
             android:layout_width="match_parent"
-            android:layout_height="72dp"
+            android:layout_height="wrap_content"
+            android:minHeight="72dp"
+            android:paddingTop="16dp"
+            android:paddingBottom="16dp"
             android:orientation="horizontal"
             android:gravity="center_vertical"
             android:paddingStart="16dp"

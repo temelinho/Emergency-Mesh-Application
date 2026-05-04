@@ -14,12 +14,15 @@ public abstract class BaseActivity extends AppCompatActivity {
     
     protected SessionManager sessionManager;
 
+    private boolean currentThemeAccessibility;
+
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         sessionManager = new SessionManager(this);
+        currentThemeAccessibility = sessionManager.isAccessibilityModeEnabled();
         
         // Tema Ayarı: setContentView'dan ÖNCE çağrılmalı
-        if (sessionManager.isAccessibilityModeEnabled()) {
+        if (currentThemeAccessibility) {
             setTheme(R.style.Theme_EmergencyMeshApp_Accessibility);
         } else {
             setTheme(R.style.Theme_EmergencyMeshApp);
@@ -32,6 +35,8 @@ public abstract class BaseActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         // Eğer kullanıcı ayarları değiştirip geri dönerse ve mod değişmişse sayfayı tazele
-        // (Bu kısım isteğe bağlı ama akış için iyi olur)
+        if (currentThemeAccessibility != sessionManager.isAccessibilityModeEnabled()) {
+            recreate();
+        }
     }
 }

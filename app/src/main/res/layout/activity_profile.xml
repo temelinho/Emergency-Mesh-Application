@@ -31,7 +31,7 @@
                 android:scaleType="centerInside"
                 android:background="@drawable/back_button_bg"
                 android:src="@drawable/ic_back_chevron"
-                app:tint="@color/white" />
+                app:tint="?android:attr/textColorPrimary" />
 
             <TextView
                 android:layout_width="0dp"

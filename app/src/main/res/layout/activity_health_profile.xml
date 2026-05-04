@@ -29,7 +29,7 @@
                 android:scaleType="centerInside"
                 android:background="@drawable/back_button_bg"
                 android:src="@drawable/ic_back_chevron"
-                app:tint="@color/white" />
+                app:tint="?android:attr/textColorPrimary" />
                 
             <TextView
                 android:layout_width="wrap_content"
@@ -57,9 +57,9 @@
             android:layout_height="wrap_content"
             android:layout_marginBottom="20dp"
             android:hint="Kan Grubu"
-            app:hintTextColor="@color/colorAccent"
-            app:boxStrokeColor="@color/colorAccent"
-            app:boxBackgroundColor="@color/surface_light"
+            app:hintTextColor="?attr/colorSecondary"
+            app:boxStrokeColor="?attr/colorSecondary"
+            app:boxBackgroundColor="?attr/colorSurface"
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu">
 
             <com.google.android.material.textfield.MaterialAutoCompleteTextView
@@ -77,9 +77,9 @@
             android:layout_height="wrap_content"
             android:layout_marginBottom="20dp"
             android:hint="Kronik Hastalıklar"
-            app:hintTextColor="@color/colorAccent"
-            app:boxStrokeColor="@color/colorAccent"
-            app:boxBackgroundColor="@color/surface_light"
+            app:hintTextColor="?attr/colorSecondary"
+            app:boxStrokeColor="?attr/colorSecondary"
+            app:boxBackgroundColor="?attr/colorSurface"
             app:helperText="Yoksa boş bırakabilirsiniz"
             app:helperTextTextColor="@color/text_hint"
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
@@ -99,9 +99,9 @@
             android:layout_height="wrap_content"
             android:layout_marginBottom="40dp"
             android:hint="Düzenli Kullanılan İlaçlar"
-            app:hintTextColor="@color/colorAccent"
-            app:boxStrokeColor="@color/colorAccent"
-            app:boxBackgroundColor="@color/surface_light"
+            app:hintTextColor="?attr/colorSecondary"
+            app:boxStrokeColor="?attr/colorSecondary"
+            app:boxBackgroundColor="?attr/colorSurface"
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
 
             <com.google.android.material.textfield.TextInputEditText

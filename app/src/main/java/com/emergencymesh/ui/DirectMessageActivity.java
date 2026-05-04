@@ -163,23 +163,26 @@ public class DirectMessageActivity extends BaseActivity {
             editPeerId.setText(knownIds.get(pos));
         });
 
-        new AlertDialog.Builder(this)
-                .setTitle("Kişiye Özel Mesaj")
+        AlertDialog dialog = new AlertDialog.Builder(this)
                 .setView(dialogView)
-                .setPositiveButton("Başlat", (d, w) -> {
-                    String newId   = editPeerId.getText().toString().trim();
-                    String newName = editPeerName.getText().toString().trim();
-                    if (newId.isEmpty()) {
-                        Toast.makeText(this, "Kullanıcı ID'si boş olamaz!", Toast.LENGTH_SHORT).show();
-                        return;
-                    }
-                    peerId   = newId;
-                    peerName = newName.isEmpty() ? shortenId(newId) : newName;
-                    txtPeerName.setText("💬 " + peerName);
-                    refreshMessages();
-                })
-                .setNegativeButton("İptal", null)
-                .show();
+                .create();
+
+        dialogView.findViewById(R.id.btnNewDmCancel).setOnClickListener(v -> dialog.dismiss());
+        dialogView.findViewById(R.id.btnNewDmStart).setOnClickListener(v -> {
+            String newId   = editPeerId.getText().toString().trim();
+            String newName = editPeerName.getText().toString().trim();
+            if (newId.isEmpty()) {
+                Toast.makeText(this, "Kullanıcı ID'si boş olamaz!", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            peerId   = newId;
+            peerName = newName.isEmpty() ? shortenId(newId) : newName;
+            txtPeerName.setText("💬 " + peerName);
+            refreshMessages();
+            dialog.dismiss();
+        });
+
+        dialog.show();
     }
 
     private String shortenId(String id) {

@@ -39,25 +39,13 @@ public class ProfileActivity extends BaseActivity {
         initViews();
         loadUserData();
 
-        btnBack.setOnClickListener(v -> {
-            android.content.Intent intent = new android.content.Intent(this, MainActivity.class);
-            intent.putExtra("REOPEN_SETTINGS", true);
-            intent.addFlags(android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP | android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP);
-            startActivity(intent);
-            finish();
-        });
+        btnBack.setOnClickListener(v -> finish());
         btnSave.setOnClickListener(v -> saveProfile());
 
         // İptal butonu
         android.view.View btnCancel = findViewById(R.id.btnCancelProfile);
         if (btnCancel != null) {
-            btnCancel.setOnClickListener(v -> {
-                android.content.Intent intent = new android.content.Intent(this, MainActivity.class);
-                intent.putExtra("REOPEN_SETTINGS", true);
-                intent.addFlags(android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP | android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP);
-                startActivity(intent);
-                finish();
-            });
+            btnCancel.setOnClickListener(v -> finish());
         }
 
         loadCities();
@@ -186,10 +174,6 @@ public class ProfileActivity extends BaseActivity {
                     sessionManager.saveExtendedUser(username, phone, firstName, lastName, city, district);
                     Toast.makeText(ProfileActivity.this, "Profil başarıyla güncellendi.", Toast.LENGTH_SHORT).show();
                     
-                    android.content.Intent intent = new android.content.Intent(ProfileActivity.this, MainActivity.class);
-                    intent.putExtra("REOPEN_SETTINGS", true);
-                    intent.addFlags(android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP | android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP);
-                    startActivity(intent);
                     finish();
                 } else {
                     String errorMsg = "Güncelleme başarısız: " + response.code();
@@ -215,10 +199,6 @@ public class ProfileActivity extends BaseActivity {
 
     @Override
     public void onBackPressed() {
-        android.content.Intent intent = new android.content.Intent(this, MainActivity.class);
-        intent.putExtra("REOPEN_SETTINGS", true);
-        intent.addFlags(android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP | android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP);
-        startActivity(intent);
-        finish();
+        super.onBackPressed();
     }
 }

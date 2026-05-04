@@ -153,7 +153,7 @@
             android:layout_marginStart="10dp"
             app:fabSize="normal"
             app:backgroundTint="@color/colorPrimary"
-            app:tint="@color/white"
+            app:tint="?android:attr/textColorPrimary"
             android:src="@android:drawable/ic_menu_send"
             app:elevation="4dp"
             app:pressedTranslationZ="6dp" />

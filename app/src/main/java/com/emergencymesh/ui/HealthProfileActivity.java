@@ -35,13 +35,7 @@ public class HealthProfileActivity extends BaseActivity {
         etChronicDisease.setText(sessionManager.getChronicDisease());
         etMedication.setText(sessionManager.getMedication());
 
-        findViewById(R.id.btnBack).setOnClickListener(v -> {
-            android.content.Intent intent = new android.content.Intent(this, MainActivity.class);
-            intent.putExtra("REOPEN_SETTINGS", true);
-            intent.addFlags(android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP | android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP);
-            startActivity(intent);
-            finish();
-        });
+        findViewById(R.id.btnBack).setOnClickListener(v -> finish());
 
         findViewById(R.id.btnSaveHealth).setOnClickListener(v -> {
             String blood = etBloodType.getText() != null ? etBloodType.getText().toString().trim() : "";
@@ -51,20 +45,12 @@ public class HealthProfileActivity extends BaseActivity {
             sessionManager.saveHealthProfile(blood, disease, meds);
             Toast.makeText(this, "Sağlık bilgileri başarıyla kaydedildi.", Toast.LENGTH_SHORT).show();
             
-            android.content.Intent intent = new android.content.Intent(this, MainActivity.class);
-            intent.putExtra("REOPEN_SETTINGS", true);
-            intent.addFlags(android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP | android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP);
-            startActivity(intent);
             finish();
         });
     }
 
     @Override
     public void onBackPressed() {
-        android.content.Intent intent = new android.content.Intent(this, MainActivity.class);
-        intent.putExtra("REOPEN_SETTINGS", true);
-        intent.addFlags(android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP | android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP);
-        startActivity(intent);
-        finish();
+        super.onBackPressed();
     }
 }
