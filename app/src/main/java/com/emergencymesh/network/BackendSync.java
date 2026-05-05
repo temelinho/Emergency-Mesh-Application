@@ -112,7 +112,6 @@ public class BackendSync {
             connection = (HttpURLConnection) url.openConnection();
             connection.setRequestMethod("POST");
             connection.setRequestProperty("Content-Type", "application/json");
-            connection.setRequestProperty("ngrok-skip-browser-warning", "true");
             connection.setRequestProperty("User-Agent", "EmergencyMeshApp/1.0");
             connection.setConnectTimeout(15000);
             connection.setReadTimeout(15000);

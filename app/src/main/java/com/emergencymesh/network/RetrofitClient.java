@@ -25,7 +25,6 @@ public class RetrofitClient {
                         public Response intercept(Chain chain) throws IOException {
                             Request original = chain.request();
                             Request request = original.newBuilder()
-                                    .header("ngrok-skip-browser-warning", "true")
                                     .header("User-Agent", "EmergencyMeshApp/1.0")
                                     .header("Content-Type", "application/json")
                                     .method(original.method(), original.body())

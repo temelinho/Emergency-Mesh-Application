@@ -510,7 +510,7 @@ public class EmergencyService extends Service implements
                     return;
                 }
 
-                if (db.insert(msg, true)) { // true = mesh'ten geldi, sunucuya tekrar gönderme
+                if (db.insert(msg, false)) { // false = Mesh'ten gelse bile sunucuya iletilmesi için 'senkronize edilmedi' olarak işaretle (Röle Mantığı)
                     notifyMessageReceived();
                     
                     // 1. MESH RELAY (AĞ SIÇRAMASI): Eğer A'dan mesaj aldıysam ve bu yeniyse, onu C'ye fırlat (Kurye Mantığı)
@@ -522,9 +522,14 @@ public class EmergencyService extends Service implements
                         wifiDirectManager.sendMessage(payload);
                     }
 
-                    // NOT: Mesh'ten gelen mesajlar sunucuya yüklenmez.
-                    // Sadece orijinal gönderici kendi mesajını sunucuya yükler.
-                    // Bu sayede admin panelde tekrar (duplicate) oluşmaz.
+                    // 2. SUNUCUYA ANLIK İLETİM (Röle Tetikleme): 
+                    // Eğer internetim varsa, bu başkasından gelen mesajı hemen sunucuya gönder.
+                    if (backendSync != null) {
+                        backendSync.syncNow();
+                    }
+
+                    // NOT: Artık mesh'ten gelen mesajlar da sunucuya yüklenir (Röle/Relay özelliği).
+                    // Sunucu tarafındaki 'existsById' kontrolü sayesinde mükerrer kayıt (duplicate) oluşmaz.
                 }
             }
         } else if (raw.startsWith(CMD_DIRECT)) {

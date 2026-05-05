@@ -169,7 +169,13 @@ public class MainActivity extends BaseActivity {
             });
         }
 
-        // Mesaj kutusu Butonu
+        
+        // Bağlantı Test Butonu (Hata Ayıklama İçin)
+        Button btnTest = new Button(this);
+        btnTest.setText("Bağlantı Testi");
+        btnTest.setOnClickListener(v -> testConnection());
+        ((android.widget.LinearLayout)findViewById(R.id.layoutMainContent)).addView(btnTest);
+
         findViewById(R.id.btnChat).setOnClickListener(v -> {
             startActivity(new Intent(this, ChatActivity.class));
         });
@@ -193,6 +199,22 @@ public class MainActivity extends BaseActivity {
         // Konum servisleri kontrolü
         checkLocationServicesAndPrompt();
     }
+
+    private void testConnection() {
+        new Thread(() -> {
+            try {
+                java.net.URL url = new java.net.URL(BACKEND_BASE + "/api/v1/emergency?size=1");
+                java.net.HttpURLConnection conn = (java.net.HttpURLConnection) url.openConnection();
+                conn.setRequestMethod("GET");
+                conn.setConnectTimeout(5000);
+                int code = conn.getResponseCode();
+                runOnUiThread(() -> Toast.makeText(this, "Bağlantı Başarılı! Kod: " + code, Toast.LENGTH_LONG).show());
+            } catch (Exception e) {
+                runOnUiThread(() -> Toast.makeText(this, "Bağlantı Hatası: " + e.getMessage(), Toast.LENGTH_LONG).show());
+            }
+        }).start();
+    }
+
 
     private void initViews() {
         txtNodeCount = findViewById(R.id.txtNodeCount);
@@ -371,7 +393,7 @@ public class MainActivity extends BaseActivity {
         if (userId == null || userId.isEmpty()) return;
 
         try {
-            URL url = new URL(BACKEND_BASE + "/api/emergency?userId=" + userId + "&status=IN_PROGRESS&size=1");
+            URL url = new URL(BACKEND_BASE + "/api/v1/emergency?userId=" + userId + "&status=IN_PROGRESS&size=1");
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestMethod("GET");
             conn.setRequestProperty("User-Agent", "EmergencyMeshApp/1.0");
